@@ -162,12 +162,12 @@ export default function Cart() {
                     className="bg-gradient-to-br from-gray-900 to-purple-950 border-2 border-purple-700/50 rounded-2xl overflow-hidden shadow-2xl hover:shadow-orange-900/50 hover:border-orange-500/50 transition-all duration-300"
                   >
                     {/* T-Shirt Image - Shows Front Snapshot */}
-                    <div className="relative w-full bg-black/50 flex items-center justify-center p-4" style={{ height: '280px', maxHeight: '280px' }}>
+                    <div className="relative w-full bg-black flex items-center justify-center p-4" style={{ height: '280px', maxHeight: '280px' }}>
                       <img
                         src={item.snapshotFront || item.image}
                         alt="T-Shirt Design"
                         className="w-full h-full object-contain"
-                        style={{ maxWidth: '100%', maxHeight: '100%' }}
+                        style={{ maxWidth: '100%', maxHeight: '100%', background: 'transparent' }}
                         onError={(e) => {
                           console.error('Failed to load cart image');
                           e.currentTarget.style.display = 'none';
