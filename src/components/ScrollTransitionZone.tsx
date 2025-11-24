@@ -42,6 +42,9 @@ const ScrollTransitionZone: React.FC = () => {
       <div className="floating-ghost-right" />
       <div className="floating-dementor-center" />
       
+      {/* BonesSkeleton - Below dementor on right */}
+      <div className="floating-bones-skeleton" />
+      
       {/* Death Image with Ghost Speech Bubble - Centered */}
       <div className="death-section">
         <img
@@ -177,6 +180,33 @@ const ScrollTransitionZone: React.FC = () => {
           }
           50% { 
             transform: translateY(-20px);
+            opacity: 0.7;
+          }
+        }
+
+        .floating-bones-skeleton {
+          position: absolute;
+          top: 70%;
+          right: 8%;
+          width: 180px;
+          height: 240px;
+          background-image: url('/assets/haunted/BonesSkeleton.png');
+          background-size: contain;
+          background-repeat: no-repeat;
+          opacity: 0.6;
+          pointer-events: none;
+          z-index: 5;
+          filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.3));
+          animation: skeletonSway 10s ease-in-out infinite;
+        }
+
+        @keyframes skeletonSway {
+          0%, 100% { 
+            transform: translateY(0) rotate(-2deg);
+            opacity: 0.6;
+          }
+          50% { 
+            transform: translateY(-15px) rotate(2deg);
             opacity: 0.7;
           }
         }

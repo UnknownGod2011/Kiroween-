@@ -151,18 +151,16 @@ function App() {
                   {/* T-Shirt Preview with Side Controls - Expanded Right Panel */}
                   <div className="relative flex items-center justify-center gap-12 max-w-7xl mx-auto">
                     {/* Center: T-Shirt */}
-                    <div className="flex-shrink-0">
-                      <div id="tshirt-preview-capture">
-                        <EnhancedTShirtMockup
-                          color={tshirtColor}
-                          designFront={designFront}
-                          designBack={designBack}
-                          activeSide={activeSide}
-                          onSideChange={setActiveSide}
-                          material={material}
-                          size={size}
-                        />
-                      </div>
+                    <div className="flex-shrink-0" id="tshirt-preview-capture">
+                      <EnhancedTShirtMockup
+                        color={tshirtColor}
+                        designFront={designFront}
+                        designBack={designBack}
+                        activeSide={activeSide}
+                        onSideChange={setActiveSide}
+                        material={material}
+                        size={size}
+                      />
                     </div>
 
                     {/* Right Side: Material, Size, Color, and Add to Cart - Expanded */}
@@ -320,7 +318,7 @@ function App() {
                       {/* Add to Cart Button - Captures Both Front & Back */}
                       <button
                         onClick={async () => {
-                          const element = document.getElementById('tshirt-preview-capture');
+                          const element = document.getElementById('portal-circle-container');
                           if (!element) return;
                           
                           const html2canvas = (await import('html2canvas')).default;
@@ -328,25 +326,27 @@ function App() {
                           
                           // Capture FRONT snapshot
                           setActiveSide('front');
-                          await new Promise(resolve => setTimeout(resolve, 200));
+                          await new Promise(resolve => setTimeout(resolve, 500));
                           const canvasFront = await html2canvas(element, {
-                            backgroundColor: null,
+                            backgroundColor: '#1a1a1a',
                             scale: 2,
                             useCORS: true,
                             allowTaint: false,
-                            logging: false,
+                            logging: true,
+                            imageTimeout: 0,
                           });
                           const snapshotFront = canvasFront.toDataURL('image/png');
                           
                           // Capture BACK snapshot
                           setActiveSide('back');
-                          await new Promise(resolve => setTimeout(resolve, 200));
+                          await new Promise(resolve => setTimeout(resolve, 500));
                           const canvasBack = await html2canvas(element, {
-                            backgroundColor: null,
+                            backgroundColor: '#1a1a1a',
                             scale: 2,
                             useCORS: true,
                             allowTaint: false,
-                            logging: false,
+                            logging: true,
+                            imageTimeout: 0,
                           });
                           const snapshotBack = canvasBack.toDataURL('image/png');
                           
@@ -359,6 +359,9 @@ function App() {
                             back: snapshotBack,
                           };
                           
+                          // Prompt for design name
+                          const designName = prompt('Name your design (optional):') || undefined;
+                          
                           const { addToCart } = await import('./utils/cartStorage');
                           addToCart({
                             image: snapshotFront, // Backward compatibility
@@ -367,6 +370,7 @@ function App() {
                             color: tshirtColor,
                             material,
                             size,
+                            designName,
                             designFront: designFront || null,
                             designBack: designBack || null,
                           });

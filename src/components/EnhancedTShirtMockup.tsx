@@ -224,24 +224,25 @@ const EnhancedTShirtMockup: React.FC<EnhancedTShirtMockupProps> = ({
   };
 
   return (
-    <div className="flex flex-col items-center justify-center h-full p-8 relative">
+    <div className="flex flex-col items-center justify-center h-full p-8 relative" id="tshirt-mockup-root">
       {/* Circular Container with DYNAMIC COLOR GLOW */}
       <div
         className="relative portal-circle-glow"
+        id="portal-circle-container"
         style={{
           width: '600px',
           height: '600px',
           zIndex: 2,
         }}
       >
-        {/* Perfect Circle with Pitch Black Interior + Subtle Edge Glow */}
+        {/* Perfect Circle with Dark Gray Interior - Neutral background that contrasts with all t-shirt colors */}
         <div 
           ref={portalRef}
-          className="absolute inset-0 rounded-full bg-black"
+          className="absolute inset-0 rounded-full"
           style={{ 
             zIndex: 3,
-            boxShadow: `0 0 20px ${color}40, 0 0 35px ${color}30, inset 0 0 15px ${color}20`,
-            animation: 'portal-glow-pulse 3s ease-in-out infinite',
+            background: '#1a1a1a',
+            boxShadow: '0 0 20px rgba(0,0,0,0.8), 0 0 35px rgba(0,0,0,0.6)',
           }}
         >
           {/* T-Shirt Container - No transition */}

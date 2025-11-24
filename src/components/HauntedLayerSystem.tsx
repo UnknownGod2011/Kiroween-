@@ -168,10 +168,16 @@ const HauntedLayerSystem = ({ page }: HauntedLayerSystemProps) => {
           50% { transform: translate3d(0, -20px, 0); }
         }
 
+        @keyframes skeleton-sway {
+          0%, 100% { transform: translate3d(0, 0, 0) rotate(-2deg); }
+          50% { transform: translate3d(0, -8px, 0) rotate(2deg); }
+        }
+
         .fog-drift-slow { animation: fog-drift-slow 70s linear infinite; }
         .fog-drift-fast { animation: fog-drift-fast 50s linear infinite; }
         .ghost-float { animation: ghost-float 12s ease-in-out infinite; }
         .ghost-float-slow { animation: ghost-float-slow 15s ease-in-out infinite; }
+        .skeleton-sway { animation: skeleton-sway 10s ease-in-out infinite; }
       `}</style>
     </div>
   );

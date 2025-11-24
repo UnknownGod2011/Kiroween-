@@ -6,6 +6,8 @@ import FormData from "form-data";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import sharp from "sharp";
+import uploadRouter from './upload-temp.js';
 
 // Ensure .env is loaded from backend folder
 const __filename = fileURLToPath(import.meta.url);
@@ -14,16 +16,19 @@ dotenv.config({ path: path.join(__dirname, ".env") });
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '50mb' })); // Increase limit for large images
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // ====== CONFIG ======
 const PORT = process.env.PORT || 5000;
 const STABILITY_API_KEY = process.env.STABILITY_API_KEY;
 const REMOVE_BG_API_KEY = process.env.REMOVE_BG_API_KEY;
+const LIGHTX_API_KEY = process.env.LIGHTX_API_KEY;
 
 // Debug checks
 console.log("Loaded STABILITY_API_KEY:", STABILITY_API_KEY ? "✅ Found" : "❌ Missing");
 console.log("Loaded REMOVE_BG_API_KEY:", REMOVE_BG_API_KEY ? "✅ Found" : "❌ Missing");
+console.log("Loaded LIGHTX_API_KEY:", LIGHTX_API_KEY ? "✅ Found" : "❌ Missing");
 
 // ====== DESIGN FOLDER ======
 const designsDir = path.join(__dirname, "designs");
@@ -31,6 +36,13 @@ if (!fs.existsSync(designsDir)) {
   fs.mkdirSync(designsDir);
 }
 app.use("/designs", express.static(designsDir));
+
+// ====== TEMP UPLOADS FOLDER ======
+const uploadsDir = path.join(__dirname, "temp-uploads");
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir);
+}
+app.use("/temp-uploads", express.static(uploadsDir));
 
 // ====== CLEANUP FUNCTION ======
 const CLEANUP_INTERVAL = 1000 * 60 * 60; // every 1 hour
@@ -234,11 +246,235 @@ app.post("/haunted-image", async (req, res) => {
   }
 });
 
+// ====== VIRTUAL TRY-ON ROUTE (WITH ASYNC POLLING) ======
+app.post("/api/tryon", async (req, res) => {
+  try {
+    const { personImageBase64, tshirtImageBase64 } = req.body;
+
+    console.log('📥 Received try-on request');
+
+    if (!personImageBase64 || !tshirtImageBase64) {
+      console.error('❌ Missing images in request');
+      return res.status(400).json({ 
+        error: 'Missing required images',
+        message: 'Both person and t-shirt images are required' 
+      });
+    }
+
+    if (!LIGHTX_API_KEY) {
+      console.error('❌ LIGHTX_API_KEY not found');
+      return res.status(500).json({ 
+        error: 'API key missing',
+        message: 'LightX API key not configured'
+      });
+    }
+
+    console.log('🎭 Converting Base64 to temporary URLs for LightX...');
+
+    // Decode Base64 to buffers
+    const personBuffer = Buffer.from(personImageBase64, 'base64');
+    const tshirtBuffer = Buffer.from(tshirtImageBase64, 'base64');
+
+    console.log('📏 Original sizes - Person:', personBuffer.length, 'T-shirt:', tshirtBuffer.length);
+
+    // RESIZE IMAGES FOR LIGHTX (Critical for success!)
+    console.log('🔧 Resizing images for optimal LightX processing...');
+    
+    // Resize person photo to 512x768 (portrait)
+    const resizedPersonBuffer = await sharp(personBuffer)
+      .resize(512, 768, { fit: 'cover', position: 'center' })
+      .jpeg({ quality: 85 })
+      .toBuffer();
+
+    // Resize t-shirt design to 512x512 (square)
+    const resizedTshirtBuffer = await sharp(tshirtBuffer)
+      .resize(512, 512, { fit: 'contain', background: { r: 255, g: 255, b: 255, alpha: 0 } })
+      .png()
+      .toBuffer();
+
+    console.log('✅ Resized - Person:', resizedPersonBuffer.length, 'T-shirt:', resizedTshirtBuffer.length);
+
+    const personFilename = `person-${Date.now()}.jpg`;
+    const tshirtFilename = `tshirt-${Date.now()}.png`;
+
+    const personPath = path.join(uploadsDir, personFilename);
+    const tshirtPath = path.join(uploadsDir, tshirtFilename);
+
+    fs.writeFileSync(personPath, resizedPersonBuffer);
+    fs.writeFileSync(tshirtPath, resizedTshirtBuffer);
+
+    const personUrl = `http://localhost:${PORT}/temp-uploads/${personFilename}`;
+    const tshirtUrl = `http://localhost:${PORT}/temp-uploads/${tshirtFilename}`;
+
+    console.log('✅ Temp URLs created');
+    console.log('Person URL:', personUrl);
+    console.log('T-shirt URL:', tshirtUrl);
+
+    console.log('📤 STEP 1: Sending request to LightX API v2...');
+
+    // STEP 1: Submit the try-on request
+    const lightxResponse = await fetch('https://api.lightxeditor.com/external/api/v2/aivirtualtryon', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': LIGHTX_API_KEY
+      },
+      body: JSON.stringify({
+        imageUrl: personUrl,
+        styleImageUrl: tshirtUrl
+      })
+    });
+
+    console.log('📥 LightX API response status:', lightxResponse.status);
+
+    if (!lightxResponse.ok) {
+      const errorText = await lightxResponse.text();
+      console.error('❌ LightX API Error:', errorText);
+      
+      // Cleanup temp files
+      fs.unlinkSync(personPath);
+      fs.unlinkSync(tshirtPath);
+      
+      return res.status(lightxResponse.status).json({ 
+        error: 'LightX API failed',
+        message: 'Try-On failed. Use a smaller photo or try again.',
+        details: errorText
+      });
+    }
+
+    const data = await lightxResponse.json();
+    console.log('📊 LightX initial response:', JSON.stringify(data, null, 2));
+
+    // STEP 2: Extract orderId from response
+    const orderId = data.body?.orderId || data.orderId;
+
+    if (!orderId) {
+      console.error('❌ No orderId in response:', data);
+      
+      // Cleanup temp files
+      fs.unlinkSync(personPath);
+      fs.unlinkSync(tshirtPath);
+      
+      return res.status(500).json({ 
+        error: 'No orderId returned',
+        message: 'LightX API did not return an orderId',
+        details: JSON.stringify(data)
+      });
+    }
+
+    console.log('✅ Got orderId:', orderId);
+    console.log('⏳ STEP 2: Waiting 3 seconds before polling...');
+    
+    // STEP 3: Wait 3 seconds
+    await new Promise(resolve => setTimeout(resolve, 3000));
+
+    // STEP 4-5: Poll for result
+    console.log('🔄 STEP 3: Starting to poll for result...');
+    
+    const maxRetries = 30; // Max 60 seconds (30 * 2 seconds) - increased for large images
+    let retries = 0;
+    let resultUrl = null;
+
+    while (retries < maxRetries) {
+      console.log(`🔄 Polling attempt ${retries + 1}/${maxRetries}...`);
+
+      const statusResponse = await fetch(
+        `https://api.lightxeditor.com/external/api/v2/aivirtualtryon/status?orderId=${orderId}`,
+        {
+          method: 'GET',
+          headers: {
+            'x-api-key': LIGHTX_API_KEY
+          }
+        }
+      );
+
+      if (!statusResponse.ok) {
+        console.error('❌ Status check failed:', statusResponse.status);
+        retries++;
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        continue;
+      }
+
+      const statusData = await statusResponse.json();
+      console.log('📊 Status:', statusData.status || statusData.body?.status);
+
+      const status = statusData.status || statusData.body?.status;
+
+      if (status === 'completed') {
+        resultUrl = statusData.resultUrl || statusData.body?.resultUrl;
+        console.log('✅ STEP 4: Processing complete! Result URL:', resultUrl);
+        break;
+      } else if (status === 'FAIL' || status === 'failed') {
+        console.error('❌ LightX processing failed');
+        
+        // Cleanup temp files
+        fs.unlinkSync(personPath);
+        fs.unlinkSync(tshirtPath);
+        
+        return res.status(500).json({ 
+          error: 'Processing failed',
+          message: 'Try-On failed. Please use another photo or try again.'
+        });
+      } else if (status === 'init' || status === 'processing') {
+        console.log(`⏳ Status: ${status}, waiting 2 seconds...`);
+        retries++;
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      } else {
+        console.log(`⚠️ Unknown status: ${status}, continuing to poll...`);
+        retries++;
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
+    }
+
+    if (!resultUrl) {
+      console.error('❌ Timeout: No result after', maxRetries, 'attempts');
+      
+      // Cleanup temp files
+      fs.unlinkSync(personPath);
+      fs.unlinkSync(tshirtPath);
+      
+      return res.status(500).json({ 
+        error: 'Processing timeout',
+        message: 'Try-On is taking too long. Please try again with a different photo.'
+      });
+    }
+
+    console.log('📥 STEP 5: Downloading result from:', resultUrl);
+
+    // STEP 6: Download the result image and convert to Base64
+    const imageResponse = await fetch(resultUrl);
+    const imageBuffer = await imageResponse.buffer();
+    const finalImageBase64 = imageBuffer.toString('base64');
+
+    console.log('✅ Virtual Try-On successful! Image size:', finalImageBase64.length);
+
+    // Cleanup temp files
+    fs.unlinkSync(personPath);
+    fs.unlinkSync(tshirtPath);
+
+    res.json({ 
+      finalImage: finalImageBase64,
+      success: true
+    });
+
+  } catch (error) {
+    console.error('❌ Virtual Try-On Error:', error);
+    console.error('Error stack:', error.stack);
+    res.status(500).json({ 
+      error: 'Server error',
+      message: error.message,
+      details: error.stack
+    });
+  }
+});
+
 // ====== ROUTES ======
+app.use('/api', uploadRouter);
 app.post("/generate-design", handleGenerate);
 app.post("/generate", handleGenerate);
 
 // ====== START SERVER ======
 app.listen(PORT, () => {
   console.log(`✅ Stable Diffusion backend running on http://localhost:${PORT}`);
+  console.log(`✅ Virtual Try-On API ready at /api/tryon`);
 });

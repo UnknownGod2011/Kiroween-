@@ -3,6 +3,7 @@ import { ShoppingCart, Trash2, Plus, Minus } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import FloatingEmbers from '../components/FloatingEmbers';
+import FlyingBat from '../components/FlyingBat';
 import { getCartItems, removeFromCart, updateCartItemQuantity, clearCart, type CartItem } from '../utils/cartStorage';
 import { useCart } from '../context/CartContext';
 
@@ -161,25 +162,56 @@ export default function Cart() {
                     transition={{ duration: 0.3, delay: index * 0.1 }}
                     className="bg-gradient-to-br from-gray-900 to-purple-950 border-2 border-purple-700/50 rounded-2xl overflow-hidden shadow-2xl hover:shadow-orange-900/50 hover:border-orange-500/50 transition-all duration-300"
                   >
-                    {/* T-Shirt Image - Shows Front Snapshot */}
-                    <div className="relative w-full bg-black flex items-center justify-center p-4" style={{ height: '280px', maxHeight: '280px' }}>
-                      <img
-                        src={item.snapshotFront || item.image}
-                        alt="T-Shirt Design"
-                        className="w-full h-full object-contain"
-                        style={{ maxWidth: '100%', maxHeight: '100%', background: 'transparent' }}
-                        onError={(e) => {
-                          console.error('Failed to load cart image');
-                          e.currentTarget.style.display = 'none';
-                        }}
-                      />
+                    {/* T-Shirt Images - Front & Back Side by Side */}
+                    <div className="relative w-full flex items-center justify-center gap-2 p-4" style={{ height: '280px', maxHeight: '280px', background: '#0a0a0a' }}>
+                      {/* Front */}
+                      <div className="flex-1 h-full flex flex-col items-center">
+                        <p className="text-xs text-purple-400 mb-1">Front</p>
+                        <img
+                          src={item.snapshotFront || item.image}
+                          alt="Front Design"
+                          className="w-full h-full object-contain"
+                          style={{ 
+                            maxWidth: '100%', 
+                            maxHeight: '100%', 
+                            background: 'transparent',
+                            imageRendering: 'crisp-edges'
+                          }}
+                          onError={(e) => {
+                            console.error('Failed to load front image');
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
+                      </div>
+                      
+                      {/* Back */}
+                      {item.snapshotBack && (
+                        <div className="flex-1 h-full flex flex-col items-center">
+                          <p className="text-xs text-purple-400 mb-1">Back</p>
+                          <img
+                            src={item.snapshotBack}
+                            alt="Back Design"
+                            className="w-full h-full object-contain"
+                            style={{ 
+                              maxWidth: '100%', 
+                              maxHeight: '100%', 
+                              background: 'transparent',
+                              imageRendering: 'crisp-edges'
+                            }}
+                            onError={(e) => {
+                              console.error('Failed to load back image');
+                              e.currentTarget.style.display = 'none';
+                            }}
+                          />
+                        </div>
+                      )}
                     </div>
 
                     {/* Item Details */}
                     <div className="p-4 space-y-3">
                       <div className="flex justify-between items-start">
-                        <div>
-                          <p className="text-orange-400 font-semibold">Custom Design</p>
+                        <div className="flex-1">
+                          <p className="text-orange-400 font-semibold">{item.designName || 'Custom Design'}</p>
                           <p className="text-sm text-purple-300">
                             {item.material} • {item.size}
                           </p>

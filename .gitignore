@@ -1,6 +1,10 @@
 # Dependencies
 node_modules/
 backend/node_modules/
+python-viton/venv/
+deepfashion-backend/.venv/
+**/venv/
+**/.venv/
 
 # Environment variables
 .env
@@ -28,3 +32,19 @@ npm-debug.log*
 *.temp
 temp-upload.png
 backend/temp-upload.png
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Large model files and checkpoints
+DeepFashion_Try_On/
+*.pth
+*.ckpt
+*.safetensors
+
+# Test results
+test-result*.png

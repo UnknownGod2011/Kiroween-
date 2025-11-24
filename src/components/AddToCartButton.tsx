@@ -32,10 +32,12 @@ const AddToCartButton: React.FC<AddToCartButtonProps> = ({
         return;
       }
 
-      // Capture the element as image
+      // Capture the element as image with full transparency support
       const canvas = await html2canvas(element, {
-        backgroundColor: null,
-        scale: 2,
+        backgroundColor: null,  // Keeps alpha channel intact
+        useCORS: true,          // Allow cross-origin images
+        allowTaint: false,      // Prevent tainted canvas
+        scale: 2,               // High quality
         logging: false,
       });
 

@@ -8,6 +8,7 @@ export interface CartItem {
   color: string;
   material: string;
   size: string;
+  designName?: string; // user-provided name for the design
   designFront?: string | null; // front design image URL
   designBack?: string | null; // back design image URL
   dateAdded: number;
