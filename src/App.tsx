@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import { Routes, Route, Link } from 'react-router-dom';
+import SplashCursor from './components/SplashCursor';
 import EnhancedTShirtMockup from './components/EnhancedTShirtMockup';
 import CinematicHero from './components/CinematicHero';
 import HauntedLayerSystem from './components/HauntedLayerSystem';
@@ -42,6 +43,9 @@ function App() {
 
   return (
     <div className="min-h-screen relative overflow-x-hidden" style={{ background: 'linear-gradient(to bottom, #0a0015 0%, #1a0a2e 50%, #0a0015 100%)' }}>
+      {/* SplashCursor Global Animation */}
+      <SplashCursor />
+      
       {/* SINGLE Global Overlay - 50% darkness */}
       <div 
         className="fixed inset-0 pointer-events-none"

@@ -16,6 +16,7 @@
     "dev": "concurrently \"npm run dev:sd\" \"npm run dev:frontend\""
   },
   "dependencies": {
+    "@ar-dacity/ardacity-splash-cursor": "^1.0.2",
     "@hookform/resolvers": "^3.9.0",
     "@radix-ui/react-accordion": "^1.2.0",
     "@radix-ui/react-alert-dialog": "^1.1.1",
