@@ -13,6 +13,7 @@ export interface CartItem {
   designBack?: string | null; // back design image URL
   dateAdded: number;
   quantity: number;
+  price?: number; // calculated price per item
 }
 
 const CART_KEY = 'crishirt_cart';
@@ -22,7 +23,6 @@ export const getCartItems = (): CartItem[] => {
     const stored = localStorage.getItem(CART_KEY);
     return stored ? JSON.parse(stored) : [];
   } catch (error) {
-    console.error('Error reading cart:', error);
     return [];
   }
 };

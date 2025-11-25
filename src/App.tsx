@@ -1,12 +1,11 @@
-import { useState, useRef } from 'react';
-import { Routes, Route, Link } from 'react-router-dom';
+import { useState, useRef, useCallback } from 'react';
+import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import SplashCursor from './components/SplashCursor';
 import EnhancedTShirtMockup from './components/EnhancedTShirtMockup';
 import CinematicHero from './components/CinematicHero';
 import HauntedLayerSystem from './components/HauntedLayerSystem';
 import MinimalDesignGenerator from './components/MinimalDesignGenerator';
-import VampireBat3D from './components/VampireBat3D';
-import SoundToggle from './components/SoundToggle';
+import Orb from './components/Orb';
 import ScrollEffects from './components/ScrollEffects';
 import ScrollTransitionZone from './components/ScrollTransitionZone';
 import GuideGhost from './components/GuideGhost';
@@ -17,34 +16,49 @@ import Cart from './pages/cart';
 import SpookyImages from './pages/spooky-images';
 import ARTryOn from './pages/ar-tryon';
 import { useCart } from './context/CartContext';
+import { ShinyText, GlareHover } from './components/animations';
 
 function App() {
+  const location = useLocation();
   const [tshirtColor, setTshirtColor] = useState('#FFFFFF'); // Default WHITE
   const [material, setMaterial] = useState('cotton');
   const [size, setSize] = useState('M');
   const [activeSide, setActiveSide] = useState<'front' | 'back'>('front');
   const [designFront, setDesignFront] = useState<string | undefined>();
   const [designBack, setDesignBack] = useState<string | undefined>();
+  const [enableSplashCursor, setEnableSplashCursor] = useState(true); // SplashCursor ON by default
   const { cartCount, updateCartCount } = useCart();
   const creatorRef = useRef<HTMLDivElement>(null);
 
   // Handler to update the correct design based on active side
-  const handleDesignSelect = (design: string) => {
+  const handleDesignSelect = useCallback((design: string) => {
     if (activeSide === 'front') {
       setDesignFront(design);
     } else {
       setDesignBack(design);
     }
-  };
+  }, [activeSide]);
 
-  const scrollToCreator = () => {
+  const scrollToCreator = useCallback(() => {
     creatorRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  }, []);
 
   return (
     <div className="min-h-screen relative overflow-x-hidden" style={{ background: 'linear-gradient(to bottom, #0a0015 0%, #1a0a2e 50%, #0a0015 100%)' }}>
-      {/* SplashCursor Global Animation */}
-      <SplashCursor />
+      {/* SplashCursor Global Animation - Controlled by Orb */}
+      {enableSplashCursor && (
+        <SplashCursor 
+          SIM_RESOLUTION={64}
+          DYE_RESOLUTION={512}
+          DENSITY_DISSIPATION={5}
+          VELOCITY_DISSIPATION={3}
+          PRESSURE={0.05}
+          PRESSURE_ITERATIONS={10}
+          CURL={2}
+          SPLAT_RADIUS={0.15}
+          SPLAT_FORCE={4000}
+        />
+      )}
       
       {/* SINGLE Global Overlay - 50% darkness */}
       <div 
@@ -58,11 +72,17 @@ function App() {
       {/* Floating Embers - Global - Doubled quantity, increased brightness */}
       <FloatingEmbers count={12} />
       
-      {/* Vampire Bat 3D */}
-      <VampireBat3D />
-      
-      {/* Sound toggle */}
-      <SoundToggle />
+      {/* Orb - Controls Sound & SplashCursor */}
+      <Orb 
+        hue={280}
+        hoverIntensity={0.5}
+        rotateOnHover={true}
+        onToggle={(isOrbActive) => {
+          // When Orb is active (clicked ON), disable SplashCursor
+          // When Orb is inactive (clicked OFF), enable SplashCursor
+          setEnableSplashCursor(!isOrbActive);
+        }}
+      />
 
       {/* CriShirt Logo - Top Left */}
       <div className="fixed top-8 left-8 z-50">
@@ -161,7 +181,6 @@ function App() {
                         designFront={designFront}
                         designBack={designBack}
                         activeSide={activeSide}
-                        onSideChange={setActiveSide}
                         material={material}
                         size={size}
                       />
@@ -319,74 +338,103 @@ function App() {
                         </div>
                       </div>
 
-                      {/* Add to Cart Button - Captures Both Front & Back */}
+                      {/* Add to Cart Button - Optimized for performance */}
                       <button
                         onClick={async () => {
-                          const element = document.getElementById('portal-circle-container');
+                          const element = document.getElementById('tshirt-mockup-root');
                           if (!element) return;
                           
-                          const html2canvas = (await import('html2canvas')).default;
-                          const currentSide = activeSide;
-                          
-                          // Capture FRONT snapshot
-                          setActiveSide('front');
-                          await new Promise(resolve => setTimeout(resolve, 500));
-                          const canvasFront = await html2canvas(element, {
-                            backgroundColor: '#1a1a1a',
-                            scale: 2,
-                            useCORS: true,
-                            allowTaint: false,
-                            logging: true,
-                            imageTimeout: 0,
-                          });
-                          const snapshotFront = canvasFront.toDataURL('image/png');
-                          
-                          // Capture BACK snapshot
-                          setActiveSide('back');
-                          await new Promise(resolve => setTimeout(resolve, 500));
-                          const canvasBack = await html2canvas(element, {
-                            backgroundColor: '#1a1a1a',
-                            scale: 2,
-                            useCORS: true,
-                            allowTaint: false,
-                            logging: true,
-                            imageTimeout: 0,
-                          });
-                          const snapshotBack = canvasBack.toDataURL('image/png');
-                          
-                          // Restore original side
-                          setActiveSide(currentSide);
-                          
-                          // Store snapshots globally for AR page
-                          (window as any).arSnapshots = {
-                            front: snapshotFront,
-                            back: snapshotBack,
-                          };
-                          
-                          // Prompt for design name
-                          const designName = prompt('Name your design (optional):') || undefined;
-                          
-                          const { addToCart } = await import('./utils/cartStorage');
-                          addToCart({
-                            image: snapshotFront, // Backward compatibility
-                            snapshotFront,
-                            snapshotBack,
-                            color: tshirtColor,
-                            material,
-                            size,
-                            designName,
-                            designFront: designFront || null,
-                            designBack: designBack || null,
-                          });
-                          
-                          updateCartCount();
-                          
-                          // Show haunted success toast
+                          // Show immediate feedback
                           const successDiv = document.createElement('div');
                           successDiv.className = 'haunted-toast';
-                          successDiv.innerHTML = '<span class="ghost-icon">👻</span><span>Cursed item added to your cart…</span>';
+                          successDiv.innerHTML = '<span class="ghost-icon">👻</span><span>Adding to cart...</span>';
                           document.body.appendChild(successDiv);
-                          setTimeout(() => successDiv.remove(), 3000);
+                          
+                          try {
+                            const html2canvas = (await import('html2canvas')).default;
+                            
+                            // Capture BOTH front and back views
+                            let snapshotFront = '';
+                            let snapshotBack = '';
+                            
+                            // Capture front
+                            if (activeSide !== 'front') {
+                              setActiveSide('front');
+                              await new Promise(resolve => setTimeout(resolve, 100)); // Wait for render
+                            }
+                            const frontCanvas = await html2canvas(element, {
+                              backgroundColor: null,
+                              scale: 2,
+                              useCORS: true,
+                              allowTaint: false,
+                              logging: false,
+                              imageTimeout: 0,
+                            });
+                            snapshotFront = frontCanvas.toDataURL('image/png');
+                            
+                            // Capture back
+                            setActiveSide('back');
+                            await new Promise(resolve => setTimeout(resolve, 100)); // Wait for render
+                            const backCanvas = await html2canvas(element, {
+                              backgroundColor: null,
+                              scale: 2,
+                              useCORS: true,
+                              allowTaint: false,
+                              logging: false,
+                              imageTimeout: 0,
+                            });
+                            snapshotBack = backCanvas.toDataURL('image/png');
+                            
+                            // Restore original side
+                            setActiveSide(activeSide);
+                            
+                            // Store snapshots globally for AR page
+                            (window as any).arSnapshots = {
+                              front: snapshotFront,
+                              back: snapshotBack,
+                            };
+                            
+                            // Auto-generate sequential name (TEE 1, TEE 2, etc.)
+                            const { getCartItems } = await import('./utils/cartStorage');
+                            const existingItems = getCartItems();
+                            const teeCount = existingItems.filter(item => item.designName?.startsWith('TEE ')).length;
+                            const autoName = `TEE ${teeCount + 1}`;
+                            
+                            // Calculate price
+                            const { calculatePrice, estimateDesignComplexity } = await import('./utils/pricingCalculator');
+                            const hasDesign = !!(designFront || designBack);
+                            const designComplexity = estimateDesignComplexity(designFront || designBack);
+                            const price = calculatePrice({
+                              color: tshirtColor,
+                              hasDesign,
+                              designComplexity,
+                              material,
+                              size,
+                            });
+                            
+                            const { addToCart } = await import('./utils/cartStorage');
+                            addToCart({
+                              image: snapshotFront,
+                              snapshotFront,
+                              snapshotBack,
+                              color: tshirtColor,
+                              material,
+                              size,
+                              designName: autoName, // Auto-generated name
+                              designFront: designFront || null,
+                              designBack: designBack || null,
+                              price,
+                            });
+                            
+                            updateCartCount();
+                            
+                            // Update success message
+                            successDiv.innerHTML = `<span class="ghost-icon">👻</span><span>${autoName} added to cart!</span>`;
+                            setTimeout(() => successDiv.remove(), 3000);
+                          } catch (error) {
+                            successDiv.innerHTML = '<span class="ghost-icon">❌</span><span>Failed to add to cart</span>';
+                            setTimeout(() => successDiv.remove(), 3000);
+                          }
                         }}
                         className="haunted-cart-button group relative px-6 py-5 text-xl font-black text-white rounded-xl overflow-hidden transition-all duration-300 hover:scale-105 mt-6"
                       >
@@ -438,43 +486,202 @@ function App() {
         />
       </Routes>
 
-      {/* Minimal Footer - Full Width Bottom - NOT on AR page */}
-      {window.location.pathname !== '/ar-tryon' && (
-        <footer className="relative z-10 border-t border-purple-700/30 py-12 w-full mt-auto" style={{ background: 'transparent' }}>
-          <div className="w-full px-6 text-center space-y-4">
-            <div className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-purple-500">
-              👻 SpookShirts
+      {/* Redesigned Minimal Footer - NOT on AR page */}
+      {location.pathname !== '/ar-tryon' && (
+        <footer className="relative z-10 w-full mt-auto border-t border-purple-900/30" style={{ background: '#000000' }}>
+          <div className="max-w-7xl mx-auto px-8 py-3">
+            {/* Single horizontal row */}
+            <div className="flex items-center gap-4 flex-wrap text-xs">
+              {/* Logo - Flush Left with Metallic Gradient */}
+              <div className="text-lg font-black" style={{ fontFamily: 'Unbounded, sans-serif' }}>
+                <span className="mr-1.5">👻</span>
+                <ShinyText 
+                  text="SpookShirts" 
+                  speed={4} 
+                  className="metallic-gradient-text" 
+                />
+              </div>
+
+              {/* Spacer */}
+              <div className="w-8"></div>
+
+              {/* Email Subscription Bar */}
+              <div className="flex gap-2">
+                <input
+                  type="email"
+                  placeholder="Email for updates..."
+                  className="w-44 px-3 py-1.5 text-xs bg-gray-900 border border-purple-700/30 rounded text-purple-200 placeholder-gray-600 focus:outline-none focus:border-purple-500 transition-all"
+                  style={{ fontFamily: 'Unbounded, sans-serif' }}
+                />
+                <GlareHover
+                  width="auto"
+                  height="auto"
+                  background="transparent"
+                  borderRadius="6px"
+                  glareColor="#a259ff"
+                  glareOpacity={0.3}
+                  glareAngle={-45}
+                  transitionDuration={500}
+                >
+                  <button className="px-3 py-1.5 text-xs bg-gradient-to-r from-purple-600 to-orange-600 text-white font-bold rounded hover:scale-105 transition-all">
+                    👻
+                  </button>
+                </GlareHover>
+              </div>
+
+              {/* Contact Icons */}
+              <div className="flex items-center gap-3">
+                <a 
+                  href="mailto:unknowngod2024@gmail.com" 
+                  className="contact-icon text-base text-gray-400 hover:text-purple-400 transition-all"
+                  title="Email: unknowngod2024@gmail.com"
+                >
+                  📧
+                </a>
+                <a 
+                  href="https://github.com/UnknownGod2011" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="contact-icon text-base text-gray-400 hover:text-purple-400 transition-all"
+                  title="GitHub"
+                >
+                  🐱‍👤
+                </a>
+                <a 
+                  href="https://www.instagram.com/tanushshah_20/" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="contact-icon text-base text-gray-400 hover:text-purple-400 transition-all"
+                  title="Instagram"
+                >
+                  📷
+                </a>
+                <a 
+                  href="https://twitter.com" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="contact-icon text-base text-gray-400 hover:text-purple-400 transition-all"
+                  title="X/Twitter"
+                >
+                  🐦
+                </a>
+              </div>
+
+              {/* Spacer */}
+              <div className="w-8"></div>
+
+              {/* Copyright & Creator Credit - Same Line */}
+              <div className="ml-auto flex items-center gap-2 text-xs text-gray-500" style={{ fontFamily: 'Orbitron, sans-serif' }}>
+                <span>© 2025 SpookShirts</span>
+                <span className="text-gray-700">•</span>
+                <ShinyText text="Tanush Shah aka Unknown God" speed={5} className="text-gray-600" />
+              </div>
             </div>
-            <p className="text-purple-300">
-              Haunted by AI. Forged in darkness.
-            </p>
-            <p className="text-purple-500 text-sm">
-              © 2025 SpookShirts. Summoning terror onto fabric. 🕷️👻🎃
-            </p>
           </div>
+
+          {/* Footer Styles */}
+          <style>{`
+            @import url('https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;700;900&family=Orbitron:wght@400;700;900&display=swap');
+            
+            .contact-icon {
+              position: relative;
+              display: inline-block;
+            }
+            
+            .contact-icon:hover {
+              filter: drop-shadow(0 0 6px rgba(168, 85, 247, 0.8));
+              transform: scale(1.15);
+            }
+            
+            .contact-icon::after {
+              content: '';
+              position: absolute;
+              inset: -3px;
+              border-radius: 50%;
+              background: radial-gradient(circle, rgba(162, 89, 255, 0.2), transparent);
+              opacity: 0;
+              transition: opacity 0.3s;
+              z-index: -1;
+            }
+            
+            .contact-icon:hover::after {
+              opacity: 1;
+            }
+          `}</style>
         </footer>
       )}
 
       {/* Global Styles */}
       <style>
         {`
-          /* Haunted Forge Title - Reduced Glow, Sharper Text */
+          /* Metallic Flowing Gradient for Footer SpookShirts */}
+          .metallic-gradient-text {
+            background: linear-gradient(
+              90deg,
+              #b8b8b8 0%,
+              #ffffff 20%,
+              #d4af37 40%,
+              #ffd700 50%,
+              #d4af37 60%,
+              #ffffff 80%,
+              #b8b8b8 100%
+            );
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: metallicFlow 3s linear infinite;
+            filter: drop-shadow(0 0 8px rgba(212, 175, 55, 0.5));
+          }
+          
+          @keyframes metallicFlow {
+            0% {
+              background-position: 0% center;
+            }
+            100% {
+              background-position: 200% center;
+            }
+          }
+          
+          .contact-icon {
+            position: relative;
+          }
+          
+          .contact-icon:hover {
+            filter: drop-shadow(0 0 6px rgba(168, 85, 247, 0.8));
+            transform: scale(1.15);
+          }
+          
+          .contact-icon::after {
+            content: '';
+            position: absolute;
+            inset: -3px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(162, 89, 255, 0.2), transparent);
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: -1;
+          }
+          
+          .contact-icon:hover::after {
+            opacity: 1;
+          }
+          
+          /* Haunted Forge Title - Sharp with Glow */
           .forge-title-haunted {
             background: linear-gradient(to bottom, #ffffff 0%, #e9d5ff 50%, #c084fc 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            filter: blur(0.2px);
             text-shadow:
-              /* Reduced lavender glow - 40% less opacity, 30% less blur */
-              0 0 12px rgba(200, 147, 255, 0.54),
-              0 0 24px rgba(147, 51, 234, 0.42),
-              0 0 36px rgba(139, 92, 246, 0.3),
-              /* Subtle shadow for depth */
-              3px 3px 6px rgba(0, 0, 0, 0.9);
+              0 0 15px rgba(200, 147, 255, 0.6),
+              0 0 30px rgba(147, 51, 234, 0.5),
+              0 0 45px rgba(139, 92, 246, 0.4),
+              3px 3px 8px rgba(0, 0, 0, 0.9);
             animation: haunted-flicker 3s ease-in-out infinite;
             letter-spacing: 0.05em;
             font-weight: 900;
+            padding: 0 10px;
           }
 
           /* Elegant Haunted Subtitle */
@@ -489,21 +696,19 @@ function App() {
           @keyframes haunted-flicker {
             0%, 100% { 
               opacity: 0.95;
-              filter: blur(0.2px);
               text-shadow:
-                0 0 12px rgba(200, 147, 255, 0.54),
-                0 0 24px rgba(147, 51, 234, 0.42),
-                0 0 36px rgba(139, 92, 246, 0.3),
-                3px 3px 6px rgba(0, 0, 0, 0.9);
+                0 0 15px rgba(200, 147, 255, 0.6),
+                0 0 30px rgba(147, 51, 234, 0.5),
+                0 0 45px rgba(139, 92, 246, 0.4),
+                3px 3px 8px rgba(0, 0, 0, 0.9);
             }
             50% { 
               opacity: 1;
-              filter: blur(0.25px);
               text-shadow:
-                0 0 14px rgba(200, 147, 255, 0.6),
-                0 0 28px rgba(147, 51, 234, 0.48),
-                0 0 42px rgba(139, 92, 246, 0.36),
-                3px 3px 6px rgba(0, 0, 0, 0.9);
+                0 0 20px rgba(200, 147, 255, 0.7),
+                0 0 40px rgba(147, 51, 234, 0.6),
+                0 0 60px rgba(139, 92, 246, 0.5),
+                3px 3px 8px rgba(0, 0, 0, 0.9);
             }
           }
 

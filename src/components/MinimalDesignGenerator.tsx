@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Loader2, Sparkles } from 'lucide-react';
+import { ShinyText } from '@/components/animations';
 
 interface MinimalDesignGeneratorProps {
   onDesignSelect: (design: string) => void;
@@ -15,7 +16,7 @@ const MinimalDesignGenerator = ({ onDesignSelect }: Omit<MinimalDesignGeneratorP
   const [error, setError] = useState<string | null>(null);
   const [makeItHaunted, setMakeItHaunted] = useState(false);
 
-  const handleGenerate = async () => {
+  const handleGenerate = useCallback(async () => {
     if (!prompt.trim()) return;
 
     setIsGenerating(true);
@@ -42,7 +43,6 @@ const MinimalDesignGenerator = ({ onDesignSelect }: Omit<MinimalDesignGeneratorP
         throw new Error("No image URL returned from backend");
       }
     } catch (err: any) {
-      console.error("Failed to generate design:", err);
       const errorMessage = err.message || "Something went wrong";
       
       // Check if it's a Stability AI API error
@@ -58,38 +58,46 @@ const MinimalDesignGenerator = ({ onDesignSelect }: Omit<MinimalDesignGeneratorP
     } finally {
       setIsGenerating(false);
     }
-  };
+  }, [prompt, makeItHaunted, onDesignSelect]);
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       handleGenerate();
     }
-  };
+  }, [handleGenerate]);
 
   return (
     <div className="space-y-4">
-      {/* Make it Haunted Switch */}
+      {/* Make it Haunted Switch - Haunted Style */}
       <div className="flex items-center justify-center gap-3 mb-2">
         <label className="flex items-center gap-3 cursor-pointer group">
-          <span className="text-purple-300 text-sm font-semibold group-hover:text-purple-200 transition-colors">
+          <span className="text-purple-300 text-base font-bold group-hover:text-orange-400 transition-colors">
             Make it Haunted
           </span>
           <div 
             onClick={() => setMakeItHaunted(!makeItHaunted)}
-            className={`relative w-14 h-7 rounded-full transition-all duration-300 ${
+            className={`relative w-16 h-8 rounded-full transition-all duration-300 border-2 ${
               makeItHaunted 
-                ? 'bg-gradient-to-r from-orange-600 to-purple-700 shadow-lg shadow-purple-900/50' 
-                : 'bg-gray-700'
+                ? 'bg-gradient-to-r from-orange-600 via-red-600 to-purple-700 border-orange-500 shadow-[0_0_20px_rgba(255,107,0,0.8),0_0_40px_rgba(147,51,234,0.6)]' 
+                : 'bg-gray-800 border-gray-600 shadow-inner'
             }`}
           >
             <div 
-              className={`absolute top-1 w-5 h-5 rounded-full bg-white transition-all duration-300 shadow-lg ${
-                makeItHaunted ? 'left-8' : 'left-1'
+              className={`absolute top-0.5 w-6 h-6 rounded-full transition-all duration-300 flex items-center justify-center ${
+                makeItHaunted 
+                  ? 'left-9 bg-white shadow-[0_0_15px_rgba(255,107,0,1)]' 
+                  : 'left-0.5 bg-gray-400'
               }`}
-            />
+            >
+              <span className="text-xs">
+                {makeItHaunted ? '👻' : '💤'}
+              </span>
+            </div>
           </div>
-          <span className="text-xs text-purple-400">
-            {makeItHaunted ? '👻 ON' : '😐 OFF'}
+          <span className={`text-sm font-bold transition-colors ${
+            makeItHaunted ? 'text-orange-400' : 'text-gray-500'
+          }`}>
+            {makeItHaunted ? '🔥 ON' : '😐 OFF'}
           </span>
         </label>
       </div>
@@ -191,12 +199,13 @@ const MinimalDesignGenerator = ({ onDesignSelect }: Omit<MinimalDesignGeneratorP
           {isGenerating ? (
             <>
               <Loader2 className="w-5 h-5 animate-spin mr-2" />
-              Summoning...
+              <ShinyText text="Summoning" speed={2} className="text-white" />
+              ...
             </>
           ) : (
             <>
               <Sparkles className="w-5 h-5 mr-2" />
-              Summon
+              <ShinyText text="Summon" speed={3} className="text-white" />
             </>
           )}
         </Button>

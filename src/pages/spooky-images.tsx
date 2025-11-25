@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Upload, Sparkles, Download } from 'lucide-react';
 import FloatingEmbers from '../components/FloatingEmbers';
+import { DecryptedText } from '../components/animations';
 
 const SpookyImages = () => {
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
@@ -58,7 +59,6 @@ const SpookyImages = () => {
         throw new Error('No image data received');
       }
     } catch (err: any) {
-      console.error('Error generating haunted image:', err);
       setError(err.message || 'Failed to generate haunted image');
     } finally {
       setIsGenerating(false);
@@ -236,7 +236,16 @@ const SpookyImages = () => {
             👻 Spooky Images
           </h1>
           <p className="text-purple-300 text-xl">
-            Transform your images into haunted masterpieces
+            <DecryptedText 
+              text="Transform your images into haunted masterpieces"
+              speed={50}
+              maxIterations={15}
+              sequential={true}
+              revealDirection="center"
+              animateOn="view"
+              className="text-purple-300"
+              parentClassName="text-xl"
+            />
           </p>
         </motion.div>
 

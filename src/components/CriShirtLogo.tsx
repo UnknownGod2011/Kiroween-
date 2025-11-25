@@ -3,10 +3,14 @@ import React from 'react';
 const CriShirtLogo: React.FC = () => {
   return (
     <div className="spookshirts-logo-container">
-      {/* Skull Icon with Glowing Eyes */}
-      <div className="skull-icon">
-        💀
-        <div className="skull-glow" />
+      {/* Custom Logo Image with Glowing Effect */}
+      <div className="logo-image-wrapper">
+        <img 
+          src="/TSHIRT_LOGO.png" 
+          alt="SpookShirts Logo" 
+          className="logo-image"
+        />
+        <div className="logo-glow" />
       </div>
 
       {/* SpookShirts Text */}
@@ -45,44 +49,60 @@ const CriShirtLogo: React.FC = () => {
           }
         }
 
-        /* Skull Icon */
-        .skull-icon {
+        /* Logo Image Wrapper - Stable, no bouncing */
+        .logo-image-wrapper {
           position: relative;
-          font-size: 36px;
-          animation: skullFloat 3s ease-in-out infinite;
-          filter: drop-shadow(0 0 10px rgba(255, 107, 0, 0.8));
+          width: 48px;
+          height: 48px;
+          transition: transform 0.6s ease-in-out;
         }
 
-        @keyframes skullFloat {
-          0%, 100% {
-            transform: translateY(0) rotate(-5deg);
-          }
-          50% {
-            transform: translateY(-5px) rotate(5deg);
-          }
+        .logo-image {
+          width: 100%;
+          height: 100%;
+          object-fit: contain;
+          filter: drop-shadow(0 0 15px rgba(255, 107, 0, 0.8));
+          transition: all 0.4s ease;
         }
 
-        .skull-glow {
+        .logo-glow {
           position: absolute;
           top: 50%;
           left: 50%;
           transform: translate(-50%, -50%);
-          width: 100%;
-          height: 100%;
-          background: radial-gradient(circle, rgba(255, 107, 0, 0.4) 0%, transparent 70%);
+          width: 120%;
+          height: 120%;
+          background: radial-gradient(circle, rgba(255, 107, 0, 0.4) 0%, rgba(147, 51, 234, 0.3) 50%, transparent 70%);
           animation: glowPulse 2s ease-in-out infinite;
           pointer-events: none;
+          border-radius: 50%;
         }
 
         @keyframes glowPulse {
           0%, 100% {
-            opacity: 0.5;
+            opacity: 0.6;
             transform: translate(-50%, -50%) scale(1);
           }
           50% {
             opacity: 1;
-            transform: translate(-50%, -50%) scale(1.2);
+            transform: translate(-50%, -50%) scale(1.3);
           }
+        }
+
+        /* Hover Effects for Logo Image - Smooth rotation only */
+        .spookshirts-logo-container:hover .logo-image-wrapper {
+          transform: rotate(360deg) scale(1.1);
+        }
+
+        .spookshirts-logo-container:hover .logo-image {
+          filter: drop-shadow(0 0 25px rgba(255, 107, 0, 1)) 
+                 drop-shadow(0 0 35px rgba(147, 51, 234, 0.8))
+                 brightness(1.2);
+        }
+
+        .spookshirts-logo-container:hover .logo-glow {
+          opacity: 1;
+          transform: translate(-50%, -50%) scale(1.5);
         }
 
         /* Logo Text */
@@ -117,35 +137,9 @@ const CriShirtLogo: React.FC = () => {
           }
         }
 
+        /* Blood drip removed from top-right logo */
         .blood-drip {
-          position: absolute;
-          bottom: -4px;
-          left: 50%;
-          transform: translateX(-50%);
-          width: 4px;
-          height: 8px;
-          background: linear-gradient(to bottom, #ff0000, #8b0000);
-          border-radius: 0 0 50% 50%;
-          animation: bloodDrip 6s ease-in-out infinite;
-          opacity: 0;
-        }
-
-        @keyframes bloodDrip {
-          0%, 90%, 100% {
-            opacity: 0;
-            transform: translateX(-50%) translateY(0);
-          }
-          10% {
-            opacity: 1;
-          }
-          50% {
-            opacity: 1;
-            transform: translateX(-50%) translateY(15px);
-          }
-          60% {
-            opacity: 0;
-            transform: translateX(-50%) translateY(20px);
-          }
+          display: none;
         }
 
         .logo-tagline {
@@ -175,18 +169,7 @@ const CriShirtLogo: React.FC = () => {
           }
         }
 
-        .spookshirts-logo-container:hover .skull-icon {
-          animation: skullSpin 0.6s ease-in-out;
-        }
 
-        @keyframes skullSpin {
-          0% {
-            transform: rotate(0deg);
-          }
-          100% {
-            transform: rotate(360deg);
-          }
-        }
       `}</style>
     </div>
   );

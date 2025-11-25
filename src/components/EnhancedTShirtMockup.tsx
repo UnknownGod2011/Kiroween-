@@ -1,12 +1,10 @@
 import React, { useState, useRef, useEffect } from "react";
-import { cn } from "@/lib/utils";
 
 interface EnhancedTShirtMockupProps {
   color: string;
   designFront?: string;
   designBack?: string;
   activeSide: 'front' | 'back';
-  onSideChange: (side: 'front' | 'back') => void;
   material: string;
   size: string;
 }
@@ -16,7 +14,6 @@ const EnhancedTShirtMockup: React.FC<EnhancedTShirtMockupProps> = ({
   designFront,
   designBack,
   activeSide,
-  onSideChange,
   material,
   size,
 }) => {

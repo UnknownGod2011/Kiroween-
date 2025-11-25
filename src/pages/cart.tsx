@@ -3,18 +3,20 @@ import { ShoppingCart, Trash2, Plus, Minus } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import FloatingEmbers from '../components/FloatingEmbers';
-import FlyingBat from '../components/FlyingBat';
 import { getCartItems, removeFromCart, updateCartItemQuantity, clearCart, type CartItem } from '../utils/cartStorage';
 import { useCart } from '../context/CartContext';
 
 export default function Cart() {
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  // Initialize with cart items immediately - no delay
+  const [cartItems, setCartItems] = useState<CartItem[]>(() => getCartItems());
   const { updateCartCount } = useCart();
-  const [showSkeleton, setShowSkeleton] = useState(true);
+  const [showSkeleton, setShowSkeleton] = useState(false); // Hidden by default
+  const [showExclamation, setShowExclamation] = useState(false);
 
   useEffect(() => {
-    loadCart();
-  }, []);
+    // Update cart count on mount
+    updateCartCount();
+  }, [updateCartCount]);
 
   const loadCart = () => {
     setCartItems(getCartItems());
@@ -35,10 +37,8 @@ export default function Cart() {
   };
 
   const handleClearCart = () => {
-    if (window.confirm('Clear all items from cart?')) {
-      clearCart();
-      loadCart();
-    }
+    clearCart();
+    loadCart();
   };
 
   const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
@@ -69,7 +69,7 @@ export default function Cart() {
             <div className="flex-1 flex justify-end pr-8">
               <button
                 onClick={() => setShowSkeleton(!showSkeleton)}
-                className="px-4 py-2 bg-purple-900/50 border border-purple-700/50 rounded-full text-purple-300 hover:bg-purple-900/70 hover:border-purple-500 transition-all text-sm"
+                className="px-4 py-2 bg-purple-900/50 border border-purple-700/50 rounded-full text-purple-300 hover:bg-purple-900/70 hover:border-purple-500 transition-all text-sm ml-8"
                 title={showSkeleton ? 'Hide ghost' : 'Show ghost'}
               >
                 👻 {showSkeleton ? 'Hide' : 'Show'}
@@ -162,49 +162,53 @@ export default function Cart() {
                     transition={{ duration: 0.3, delay: index * 0.1 }}
                     className="bg-gradient-to-br from-gray-900 to-purple-950 border-2 border-purple-700/50 rounded-2xl overflow-hidden shadow-2xl hover:shadow-orange-900/50 hover:border-orange-500/50 transition-all duration-300"
                   >
-                    {/* T-Shirt Images - Front & Back Side by Side */}
-                    <div className="relative w-full flex items-center justify-center gap-2 p-4" style={{ height: '280px', maxHeight: '280px', background: '#0a0a0a' }}>
+                    {/* T-Shirt Images - Front & Back Side by Side - Clean transparent background */}
+                    <div className="relative w-full flex items-center justify-center gap-2 p-4" style={{ height: '280px', maxHeight: '280px', background: 'transparent' }}>
                       {/* Front */}
                       <div className="flex-1 h-full flex flex-col items-center">
                         <p className="text-xs text-purple-400 mb-1">Front</p>
-                        <img
-                          src={item.snapshotFront || item.image}
-                          alt="Front Design"
-                          className="w-full h-full object-contain"
-                          style={{ 
-                            maxWidth: '100%', 
-                            maxHeight: '100%', 
-                            background: 'transparent',
-                            imageRendering: 'crisp-edges'
-                          }}
-                          onError={(e) => {
-                            console.error('Failed to load front image');
-                            e.currentTarget.style.display = 'none';
-                          }}
-                        />
-                      </div>
-                      
-                      {/* Back */}
-                      {item.snapshotBack && (
-                        <div className="flex-1 h-full flex flex-col items-center">
-                          <p className="text-xs text-purple-400 mb-1">Back</p>
+                        <div className="w-full h-full flex items-center justify-center">
                           <img
-                            src={item.snapshotBack}
-                            alt="Back Design"
-                            className="w-full h-full object-contain"
+                            src={item.snapshotFront || item.image}
+                            alt="Front Design"
+                            className="max-w-full max-h-full object-contain"
                             style={{ 
-                              maxWidth: '100%', 
-                              maxHeight: '100%', 
                               background: 'transparent',
-                              imageRendering: 'crisp-edges'
+                              imageRendering: 'crisp-edges',
+                              filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.3))'
                             }}
                             onError={(e) => {
-                              console.error('Failed to load back image');
                               e.currentTarget.style.display = 'none';
                             }}
                           />
                         </div>
-                      )}
+                      </div>
+                      
+                      {/* Back */}
+                      <div className="flex-1 h-full flex flex-col items-center">
+                        <p className="text-xs text-purple-400 mb-1">Back</p>
+                        <div className="w-full h-full flex items-center justify-center">
+                          {item.snapshotBack && item.snapshotBack !== item.snapshotFront ? (
+                            <img
+                              src={item.snapshotBack}
+                              alt="Back Design"
+                              className="max-w-full max-h-full object-contain"
+                              style={{ 
+                                background: 'transparent',
+                                imageRendering: 'crisp-edges',
+                                filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.3))'
+                              }}
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                              }}
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-purple-500/30 text-sm">
+                              No back design
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
 
                     {/* Item Details */}
@@ -212,7 +216,12 @@ export default function Cart() {
                       <div className="flex justify-between items-start">
                         <div className="flex-1">
                           <p className="text-orange-400 font-semibold">{item.designName || 'Custom Design'}</p>
-                          <p className="text-sm text-purple-300">
+                          {item.price && (
+                            <p className="text-sm text-gray-400 font-medium mt-0.5">
+                              🪙 ₹{item.price.toLocaleString('en-IN')}
+                            </p>
+                          )}
+                          <p className="text-sm text-purple-300 mt-1">
                             {item.material} • {item.size}
                           </p>
                           <div
@@ -260,21 +269,60 @@ export default function Cart() {
               </AnimatePresence>
             </div>
 
-            {/* Checkout Section */}
+            {/* Checkout Section with Lanyard Animation */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
-              className="mt-12 text-center"
+              className="mt-12"
             >
-              <div className="bg-gradient-to-br from-gray-900 to-purple-950 border-2 border-purple-700/50 rounded-3xl p-8 max-w-md mx-auto">
-                <h3 className="text-2xl font-bold text-orange-400 mb-4">Ready to Summon?</h3>
-                <p className="text-purple-300 mb-6">
-                  Total Items: <span className="text-white font-bold">{totalItems}</span>
-                </p>
-                <button className="w-full px-12 py-4 text-xl font-bold text-white bg-gradient-to-r from-green-600 to-green-700 rounded-full hover:scale-105 transition-all duration-300 shadow-[0_0_40px_rgba(16,185,129,0.6)] hover:shadow-[0_0_60px_rgba(16,185,129,0.9)]">
-                  🎃 Proceed to Checkout
-                </button>
+              <div className="flex items-center justify-center gap-4 max-w-md mx-auto relative">
+                {/* Checkout Box */}
+                <div className="bg-gradient-to-br from-gray-900 to-purple-950 border-2 border-purple-700/50 rounded-3xl p-8 w-full">
+                  <h3 className="text-2xl font-bold text-orange-400 mb-4">Ready to Summon?</h3>
+                  <div className="space-y-3 mb-6">
+                    <p className="text-purple-300">
+                      Total Items: <span className="text-white font-bold">{totalItems}</span>
+                    </p>
+                    {(() => {
+                      const totalPrice = cartItems.reduce((sum, item) => {
+                        const itemPrice = item.price || 499;
+                        return sum + (itemPrice * item.quantity);
+                      }, 0);
+                      return totalPrice > 0 ? (
+                        <p className="text-lg text-white font-bold">
+                          Total: <span className="text-green-400">₹{totalPrice.toLocaleString('en-IN')}</span>
+                        </p>
+                      ) : null;
+                    })()}
+                  </div>
+                  <button 
+                    onClick={() => {
+                      setShowExclamation(true);
+                      setTimeout(() => setShowExclamation(false), 1000);
+                    }}
+                    className="w-full px-12 py-4 text-xl font-bold text-white bg-gradient-to-r from-green-600 to-green-700 rounded-full hover:scale-105 transition-all duration-300 shadow-[0_0_40px_rgba(16,185,129,0.6)] hover:shadow-[0_0_60px_rgba(16,185,129,0.9)]"
+                  >
+                    🎃 Proceed to Checkout
+                  </button>
+                </div>
+
+                {/* Exclamation Mark Animation */}
+                <AnimatePresence>
+                  {showExclamation && (
+                    <motion.div
+                      initial={{ scale: 0, opacity: 0, x: -20 }}
+                      animate={{ scale: 1, opacity: 1, x: 0 }}
+                      exit={{ scale: 0, opacity: 0, y: -30 }}
+                      transition={{ duration: 0.3 }}
+                      className="absolute -right-12 top-1/2 -translate-y-1/2"
+                    >
+                      <div className="text-4xl animate-bounce">
+                        ❗
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </motion.div>
           </>

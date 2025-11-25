@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 interface HauntedLayerSystemProps {
   page: 'hero' | 'create' | 'collection' | 'cart' | 'spooky-images';
@@ -183,4 +183,4 @@ const HauntedLayerSystem = ({ page }: HauntedLayerSystemProps) => {
   );
 };
 
-export default HauntedLayerSystem;
+export default React.memo(HauntedLayerSystem);

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 
 interface CinematicHeroProps {
   onBeginCurse: () => void;
@@ -12,20 +12,20 @@ const CinematicHero = ({ onBeginCurse }: CinematicHeroProps) => {
 
   useEffect(() => {
     setIsVisible(true);
-    console.log('🎃 CinematicHero mounted - Assets loading from /assets/haunted/');
   }, []);
 
-  // Mouse parallax tracking
+  // Mouse parallax tracking - optimized with useCallback
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    setMousePos({
+      x: (e.clientX / window.innerWidth - 0.5) * 2,
+      y: (e.clientY / window.innerHeight - 0.5) * 2,
+    });
+  }, []);
+
   useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      setMousePos({
-        x: (e.clientX / window.innerWidth - 0.5) * 2,
-        y: (e.clientY / window.innerHeight - 0.5) * 2,
-      });
-    };
     window.addEventListener('mousemove', handleMouseMove);
     return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, []);
+  }, [handleMouseMove]);
 
 
 
@@ -52,8 +52,8 @@ const CinematicHero = ({ onBeginCurse }: CinematicHeroProps) => {
 
     const particles: Particle[] = [];
 
-    // Create fog particles
-    for (let i = 0; i < 40; i++) {
+    // Create fog particles - reduced for performance
+    for (let i = 0; i < 30; i++) {
       particles.push({
         x: Math.random() * canvas.width,
         y: Math.random() * canvas.height,
@@ -65,8 +65,8 @@ const CinematicHero = ({ onBeginCurse }: CinematicHeroProps) => {
       });
     }
 
-    // Create ember particles - increased count and brightness
-    for (let i = 0; i < 25; i++) {
+    // Create ember particles - optimized count
+    for (let i = 0; i < 20; i++) {
       particles.push({
         x: Math.random() * canvas.width,
         y: canvas.height + Math.random() * 200,
@@ -78,6 +78,7 @@ const CinematicHero = ({ onBeginCurse }: CinematicHeroProps) => {
       });
     }
 
+    let animationFrameId: number;
     const animate = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -145,7 +146,7 @@ const CinematicHero = ({ onBeginCurse }: CinematicHeroProps) => {
         }
       });
 
-      requestAnimationFrame(animate);
+      animationFrameId = requestAnimationFrame(animate);
     };
 
     animate();
@@ -157,6 +158,7 @@ const CinematicHero = ({ onBeginCurse }: CinematicHeroProps) => {
     window.addEventListener('resize', handleResize);
 
     return () => {
+      cancelAnimationFrame(animationFrameId);
       window.removeEventListener('resize', handleResize);
     };
   }, []);
@@ -298,10 +300,14 @@ const CinematicHero = ({ onBeginCurse }: CinematicHeroProps) => {
           <div className="relative">
             <h1 className="stranger-title text-6xl lg:text-7xl xl:text-8xl font-black leading-tight">
               <span className="title-word">SUMMO
-                <span className="relative inline-block">
+                <span className="relative inline-block blood-source">
                   N
-                  {/* Blood Drip from N to E */}
-                  <span className="blood-drip-long" />
+                  {/* Blood Drop Image Animation */}
+                  <img 
+                    src="/Blood drop.png" 
+                    alt="" 
+                    className="blood-drop-image"
+                  />
                 </span>
               </span>
               <br />
@@ -414,46 +420,25 @@ const CinematicHero = ({ onBeginCurse }: CinematicHeroProps) => {
           text-stroke: 2px rgba(255, 50, 50, 0.6);
         }
 
-        /* Long Blood Drip from N to E */
-        .blood-drip-long {
+        /* Blood Drop Image Animation */
+        .blood-source {
+          position: relative;
+        }
+
+        .blood-drop-image {
           position: absolute;
           bottom: -10px;
           left: 50%;
-          transform: translateX(-50%);
-          width: 16px;
-          height: 16px;
-          background: radial-gradient(circle, #ff0000 0%, #8b0000 100%);
-          border-radius: 50% 50% 50% 0;
+          width: 28px;
+          height: auto;
+          transform: translateX(-50%) translateY(0) scale(1);
           transform-origin: top center;
-          animation: blood-drop-long 7s ease-in infinite;
+          animation: blood-drop-fall 8s ease-in infinite;
           opacity: 0;
-          filter: drop-shadow(0 0 6px rgba(255, 0, 0, 1));
+          filter: drop-shadow(0 3px 6px rgba(139, 0, 0, 0.7));
           z-index: 10;
-        }
-
-        /* Blood trail */
-        .blood-drip-long::before {
-          content: '';
-          position: absolute;
-          top: -8px;
-          left: 50%;
-          transform: translateX(-50%);
-          width: 6px;
-          height: 12px;
-          background: linear-gradient(to bottom, #ff0000, rgba(255, 0, 0, 0.5));
-          border-radius: 50%;
-        }
-
-        /* Glossy highlight */
-        .blood-drip-long::after {
-          content: '';
-          position: absolute;
-          top: 3px;
-          left: 4px;
-          width: 5px;
-          height: 5px;
-          background: radial-gradient(circle, rgba(255, 255, 255, 0.6), transparent);
-          border-radius: 50%;
+          pointer-events: none;
+          will-change: transform, opacity;
         }
 
         .blood-target {
@@ -504,43 +489,47 @@ const CinematicHero = ({ onBeginCurse }: CinematicHeroProps) => {
           }
         }
 
-        /* Long Blood Drop Animation - Falls from N down through lines to E */
-        @keyframes blood-drop-long {
+        /* Blood Drop Fall Animation - Smooth, subtle, GPU-optimized */
+        @keyframes blood-drop-fall {
           0% {
             opacity: 0;
-            transform: translateX(-50%) translateY(0) scale(0.5);
-          }
-          5% {
-            opacity: 1;
             transform: translateX(-50%) translateY(0) scale(1);
           }
-          15% {
-            opacity: 1;
-            transform: translateX(-50%) translateY(50px) scale(1.1);
+          5% {
+            opacity: 0.95;
+            transform: translateX(-50%) translateY(0) scale(1);
           }
-          30% {
-            opacity: 1;
-            transform: translateX(-50%) translateY(150px) scale(1);
+          10% {
+            opacity: 0.95;
+            transform: translateX(-50%) translateY(30px) scale(1.05);
           }
-          45% {
-            opacity: 1;
-            transform: translateX(-50%) translateY(250px) scale(0.95);
-          }
-          60% {
+          25% {
             opacity: 0.9;
-            transform: translateX(-50%) translateY(350px) scale(0.9);
+            transform: translateX(-50%) translateY(120px) scale(1.05);
           }
-          75% {
+          40% {
+            opacity: 0.85;
+            transform: translateX(-50%) translateY(220px) scale(1);
+          }
+          55% {
+            opacity: 0.75;
+            transform: translateX(-50%) translateY(320px) scale(0.95);
+          }
+          70% {
             opacity: 0.6;
-            transform: translateX(-50%) translateY(420px) scale(0.8);
+            transform: translateX(-50%) translateY(400px) scale(0.9);
           }
           85% {
             opacity: 0.3;
-            transform: translateX(-50%) translateY(450px) scale(0.6);
+            transform: translateX(-50%) translateY(460px) scale(0.8);
+          }
+          95% {
+            opacity: 0.1;
+            transform: translateX(-50%) translateY(490px) scale(0.7);
           }
           100% {
             opacity: 0;
-            transform: translateX(-50%) translateY(480px) scale(0.4);
+            transform: translateX(-50%) translateY(500px) scale(0.6);
           }
         }
 

@@ -1,7 +1,9 @@
 {
-  "name": "ai-tshirt-design",
+  "name": "spookshirts",
   "private": true,
   "version": "1.0.0",
+  "description": "AI-powered horror-themed t-shirt designer with virtual try-on",
+  "author": "Tanush Shah (Unknown God) <unknowngod2024@gmail.com>",
   "type": "module",
   "scripts": {
     "dev:frontend": "vite",
@@ -61,6 +63,7 @@
     "lucide-react": "^0.446.0",
     "next-themes": "^0.3.0",
     "node-fetch": "^3.3.2",
+    "ogl": "^1.0.11",
     "openai": "^5.13.1",
     "react": "^18.3.1",
     "react-day-picker": "^8.10.1",

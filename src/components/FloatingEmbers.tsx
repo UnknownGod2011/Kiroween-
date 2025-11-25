@@ -91,5 +91,4 @@ const FloatingEmbers: React.FC<FloatingEmbersProps> = ({ count = 10 }) => {
   );
 };
 
-
-export default FloatingEmbers;
+export default React.memo(FloatingEmbers);

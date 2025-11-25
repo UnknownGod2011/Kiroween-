@@ -8,6 +8,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import sharp from "sharp";
 import uploadRouter from './upload-temp.js';
+import miragicRouter from './miragic-tryon.js';
 
 // Ensure .env is loaded from backend folder
 const __filename = fileURLToPath(import.meta.url);
@@ -470,6 +471,7 @@ app.post("/api/tryon", async (req, res) => {
 
 // ====== ROUTES ======
 app.use('/api', uploadRouter);
+app.use('/api/miragic', miragicRouter);
 app.post("/generate-design", handleGenerate);
 app.post("/generate", handleGenerate);
 
@@ -477,4 +479,5 @@ app.post("/generate", handleGenerate);
 app.listen(PORT, () => {
   console.log(`✅ Stable Diffusion backend running on http://localhost:${PORT}`);
   console.log(`✅ Virtual Try-On API ready at /api/tryon`);
+  console.log(`✅ Miragic Virtual Try-On API ready at /api/miragic/tryon`);
 });
