@@ -60,7 +60,7 @@ const CinematicHero = ({ onBeginCurse }: CinematicHeroProps) => {
         size: 100 + Math.random() * 200,
         speedX: (Math.random() - 0.5) * 0.3,
         speedY: (Math.random() - 0.5) * 0.2,
-        opacity: 0.02 + Math.random() * 0.03,
+        opacity: 0.08 + Math.random() * 0.06,
         type: 'fog',
       });
     }
