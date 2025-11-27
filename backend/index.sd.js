@@ -9,6 +9,8 @@ import { fileURLToPath } from "url";
 import sharp from "sharp";
 import uploadRouter from './upload-temp.js';
 import miragicRouter from './miragic-tryon.js';
+import compositeRouter from './composite-tshirt.js';
+import { stabilityTextToImage, stabilityImageToImage, removeBg } from './utils/apiWrappers.js';
 
 // Ensure .env is loaded from backend folder
 const __filename = fileURLToPath(import.meta.url);
@@ -47,7 +49,7 @@ app.use("/temp-uploads", express.static(uploadsDir));
 
 // ====== CLEANUP FUNCTION ======
 const CLEANUP_INTERVAL = 1000 * 60 * 60; // every 1 hour
-const FILE_LIFETIME = 1000 * 60 * 60 * 24; // 24 hours
+const FILE_LIFETIME = 1000 * 60 * 60; // 1 hour
 
 function cleanupOldFiles() {
   const now = Date.now();
@@ -75,55 +77,36 @@ async function handleGenerate(req, res) {
     const { prompt } = req.body;
     if (!prompt) return res.status(400).json({ error: "Prompt is required" });
 
-    // ===== Generate image from Stability AI =====
-    const formData = new FormData();
-    formData.append("prompt", prompt);
-    formData.append("aspect_ratio", "1:1");
-    formData.append("output_format", "png");
-
-    // Trim any whitespace from API key
-    const apiKey = STABILITY_API_KEY?.trim();
-    console.log("🔑 Using API Key:", apiKey ? `${apiKey.substring(0, 15)}...` : "MISSING");
-    console.log("🔑 Key length:", apiKey?.length);
+    // ===== Generate image from Stability AI with automatic key rotation =====
+    console.log("🎨 Generating image with Stability AI...");
     
-    if (!apiKey) {
-      return res.status(500).json({ error: "STABILITY_API_KEY not configured" });
-    }
-    
-    const response = await fetch(
-      "https://api.stability.ai/v2beta/stable-image/generate/core",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          Accept: "application/json",
-        },
-        body: formData,
-      }
-    );
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Stability API error:", response.status, errorText);
+    let data;
+    try {
+      data = await stabilityTextToImage(prompt, {
+        aspectRatio: "1:1",
+        outputFormat: "png"
+      });
+    } catch (error) {
+      console.error("Stability API error:", error.message);
       
       // Provide user-friendly error messages
-      let userMessage = errorText;
-      if (response.status === 500) {
-        userMessage = "Stability AI is temporarily down (500 error). Please try again in a few minutes.";
-      } else if (response.status === 429) {
+      let userMessage = error.message;
+      const statusCode = error.statusCode || 500;
+      
+      if (statusCode === 500) {
+        userMessage = "Stability AI is temporarily down. Please try again in a few minutes.";
+      } else if (statusCode === 429) {
         userMessage = "API rate limit reached. Please wait a moment and try again.";
-      } else if (response.status === 401 || response.status === 403) {
-        userMessage = "API authentication failed. Please check your API key.";
+      } else if (statusCode === 401 || statusCode === 403 || statusCode === 402) {
+        userMessage = "All API keys have exhausted their credits. Please add more credits.";
       }
       
-      return res.status(response.status).json({ 
+      return res.status(statusCode).json({ 
         error: userMessage,
-        details: errorText,
-        status: response.status
+        details: error.message,
+        status: statusCode
       });
     }
-
-    const data = await response.json();
     const imageBase64 = data.image ? data.image : data.images?.[0];
     if (!imageBase64) return res.status(500).json({ error: "No image returned from API" });
 
@@ -134,24 +117,19 @@ async function handleGenerate(req, res) {
     fs.writeFileSync(filepath, buffer);
     console.log(`✅ Base image saved: ${filename}`);
 
-    // ===== Remove background using Remove.bg =====
-    const removeForm = new FormData();
-    removeForm.append("image_file", fs.createReadStream(filepath));
-    removeForm.append("size", "auto");
-
-    const removeResponse = await fetch("https://api.remove.bg/v1.0/removebg", {
-      method: "POST",
-      headers: { "X-Api-Key": REMOVE_BG_API_KEY },
-      body: removeForm,
-    });
-
-    if (!removeResponse.ok) {
-      const errorText = await removeResponse.text();
-      console.error("Remove.bg error:", errorText);
-      return res.status(removeResponse.status).json({ error: errorText });
+    // ===== Remove background using Remove.bg with automatic key rotation =====
+    console.log("🖼️ Removing background...");
+    
+    let removeBuffer;
+    try {
+      removeBuffer = await removeBg(fs.createReadStream(filepath), { size: "auto" });
+    } catch (error) {
+      console.error("Remove.bg error:", error.message);
+      return res.status(error.statusCode || 500).json({ 
+        error: "Background removal failed. All API keys exhausted.",
+        details: error.message
+      });
     }
-
-    const removeBuffer = await removeResponse.buffer();
     fs.writeFileSync(filepath, removeBuffer); // overwrite original image
     console.log(`✅ Background removed: ${filename}`);
 
@@ -199,36 +177,44 @@ app.post("/haunted-image", async (req, res) => {
     console.log('Sending to Stability AI image-to-image endpoint...');
     console.log('Prompt:', hauntedPrompt);
     
-    const stabilityResponse = await fetch(
-      'https://api.stability.ai/v2beta/stable-image/generate/ultra',
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${STABILITY_API_KEY}`,
-          'Accept': 'image/*',
-        },
-        body: formData,
+    let resultData;
+    try {
+      resultData = await stabilityImageToImage(
+        fs.createReadStream(tempPath),
+        hauntedPrompt,
+        { strength: '0.65', outputFormat: 'png' }
+      );
+    } catch (error) {
+      // Clean up temp file
+      if (fs.existsSync(tempPath)) {
+        fs.unlinkSync(tempPath);
       }
-    );
+      
+      console.error('Stability AI error:', error.message);
+      const statusCode = error.statusCode || 500;
+      
+      let userMessage = error.message;
+      if (statusCode === 402 || statusCode === 401 || statusCode === 403) {
+        userMessage = 'All API keys have exhausted their credits. Please add more credits.';
+      }
+      
+      return res.status(statusCode).json({ 
+        error: 'Failed to transform image', 
+        details: userMessage 
+      });
+    }
 
     // Clean up temp file
     if (fs.existsSync(tempPath)) {
       fs.unlinkSync(tempPath);
     }
 
-    console.log('Stability response status:', stabilityResponse.status);
-
-    if (!stabilityResponse.ok) {
-      const errorText = await stabilityResponse.text();
-      console.error('Stability AI error:', errorText);
-      return res.status(stabilityResponse.status).json({ 
-        error: 'Failed to transform image', 
-        details: errorText 
-      });
+    const imageBase64 = resultData.image || resultData.images?.[0];
+    if (!imageBase64) {
+      return res.status(500).json({ error: 'No image returned from API' });
     }
-
-    const resultBuffer = await stabilityResponse.buffer();
-    const base64Result = resultBuffer.toString('base64');
+    
+    const base64Result = imageBase64;
 
     console.log('✅ Haunted transformation complete! Image size:', base64Result.length);
 
@@ -471,6 +457,7 @@ app.post("/api/tryon", async (req, res) => {
 
 // ====== ROUTES ======
 app.use('/api', uploadRouter);
+app.use('/api', compositeRouter);
 app.use('/api/miragic', miragicRouter);
 app.post("/generate-design", handleGenerate);
 app.post("/generate", handleGenerate);

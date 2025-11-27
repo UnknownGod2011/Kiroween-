@@ -141,14 +141,70 @@ const ARTryOn = () => {
         ? uploadedImage.split(',')[1] 
         : uploadedImage;
 
-      const garmentBase64 = tshirtImage.includes(',')
-        ? tshirtImage.split(',')[1]
-        : tshirtImage;
-
       const backend = BACKENDS[selectedBackend];
 
       // Handle Miragic API with polling
       if (selectedBackend === 'miragic') {
+
+        let garmentBase64: string;
+
+        // Check if this is a pre-made mockup from collection (skip compositing)
+        if (selectedDesign.isPreMadeMockup) {
+          console.log('📦 Using pre-made mockup (collection item)');
+          
+          // If it's a file path, convert to base64
+          if (tshirtImage.startsWith('/') || tshirtImage.startsWith('http')) {
+            console.log('🔄 Converting image path to base64...');
+            try {
+              const response = await fetch(tshirtImage);
+              const blob = await response.blob();
+              const base64 = await new Promise<string>((resolve) => {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                  const result = reader.result as string;
+                  resolve(result.includes(',') ? result.split(',')[1] : result);
+                };
+                reader.readAsDataURL(blob);
+              });
+              garmentBase64 = base64;
+            } catch (error) {
+              console.error('Failed to load collection image:', error);
+              alert('Failed to load t-shirt image');
+              setIsProcessing(false);
+              return;
+            }
+          } else {
+            // Already base64
+            garmentBase64 = tshirtImage.includes(',')
+              ? tshirtImage.split(',')[1]
+              : tshirtImage;
+          }
+        } else {
+          // Step 0: Composite design onto t-shirt mockup for generated designs
+          console.log('🎨 Compositing design onto t-shirt...');
+          const compositeResponse = await fetch('http://localhost:5000/api/composite-tshirt', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              designImage: tshirtImage,
+              color: selectedDesign.color || '#3B82F6',
+              side: selectedSide
+            })
+          });
+
+          if (!compositeResponse.ok) {
+            alert('Failed to prepare t-shirt image');
+            setIsProcessing(false);
+            return;
+          }
+
+          const compositeData = await compositeResponse.json();
+          garmentBase64 = compositeData.image.includes(',')
+            ? compositeData.image.split(',')[1]
+            : compositeData.image;
+        }
 
         // Step 1: Start the try-on job
         const response = await fetch(`${backend.url}${backend.endpoint}`, {

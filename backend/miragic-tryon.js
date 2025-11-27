@@ -1,12 +1,13 @@
 import express from 'express';
 import fetch from 'node-fetch';
 import FormData from 'form-data';
+import keyRotation from './utils/keyRotation.js';
+import { MIRAGIC_KEYS } from './utils/apiKeys.js';
 
 const router = express.Router();
 
 // Get config from environment (loaded by main server)
 const getMiragicConfig = () => ({
-  apiKey: process.env.MIRAGIC_API_KEY,
   baseUrl: 'https://backend.miragic.ai/api/v1/virtual-try-on',
   testMode: process.env.MIRAGIC_TEST_MODE === 'true'
 });
@@ -16,7 +17,7 @@ let configLogged = false;
 const logConfig = () => {
   if (!configLogged) {
     const config = getMiragicConfig();
-    console.log('🔑 Miragic API Key loaded:', config.apiKey ? `${config.apiKey.substring(0, 20)}...` : '❌ MISSING');
+    console.log('🔑 Miragic API Keys loaded:', MIRAGIC_KEYS.length, 'keys with rotation');
     if (config.testMode) {
       console.log('⚠️  MIRAGIC TEST MODE ENABLED - Using mock responses');
     }
@@ -66,42 +67,49 @@ router.post('/tryon', async (req, res) => {
     const clothBuffer = base64ToBuffer(clothImage);
 
     console.log('📏 Image sizes - Person:', personBuffer.length, 'bytes, Cloth:', clothBuffer.length, 'bytes');
+    console.log('📤 Sending request to Miragic API with rotation...');
 
-    // Create form data with proper file format
-    const formData = new FormData();
-    formData.append('garmentType', 'upper_body');
-    formData.append('humanImage', personBuffer, {
-      filename: 'human_image.jpg',
-      contentType: 'image/jpeg'
-    });
-    formData.append('clothImage', clothBuffer, {
-      filename: 'cloth_image.jpg',
-      contentType: 'image/jpeg'
-    });
+    // Call Miragic API with automatic key rotation
+    const data = await keyRotation.executeWithRotation(
+      'miragic',
+      MIRAGIC_KEYS,
+      async (apiKey, attempt) => {
+        if (attempt > 0) {
+          console.log(`🔄 Rotating to backup key (attempt ${attempt + 1}/${MIRAGIC_KEYS.length})`);
+        }
 
-    console.log('📤 Sending request to Miragic API...');
+        // Create fresh FormData for each attempt (FormData can't be reused)
+        const formData = new FormData();
+        formData.append('garmentType', 'upper_body');
+        formData.append('humanImage', personBuffer, {
+          filename: 'human_image.jpg',
+          contentType: 'image/jpeg'
+        });
+        formData.append('clothImage', clothBuffer, {
+          filename: 'cloth_image.jpg',
+          contentType: 'image/jpeg'
+        });
 
-    // Call Miragic API
-    const response = await fetch(config.baseUrl, {
-      method: 'POST',
-      headers: {
-        'X-API-Key': config.apiKey,
-        ...formData.getHeaders()
-      },
-      body: formData
-    });
+        const response = await fetch(config.baseUrl, {
+          method: 'POST',
+          headers: {
+            'X-API-Key': apiKey,
+            ...formData.getHeaders()
+          },
+          body: formData
+        });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('❌ Miragic API Error:', errorText);
-      return res.status(response.status).json({ 
-        error: 'Virtual Try-On API failed',
-        message: 'Failed to start try-on job',
-        details: errorText
-      });
-    }
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`❌ Miragic API error (key ${attempt + 1}):`, response.status, errorText.substring(0, 200));
+          const error = new Error(errorText);
+          error.statusCode = response.status;
+          throw error;
+        }
 
-    const data = await response.json();
+        return await response.json();
+      }
+    );
     
     if (!data.success || !data.data?.jobId) {
       console.error('❌ No jobId in response:', data);
@@ -158,23 +166,28 @@ router.get('/tryon/:jobId', async (req, res) => {
       });
     }
 
-    const response = await fetch(`${config.baseUrl}/${jobId}`, {
-      method: 'GET',
-      headers: {
-        'X-API-Key': config.apiKey
+    // Check status with automatic key rotation
+    const data = await keyRotation.executeWithRotation(
+      'miragic',
+      MIRAGIC_KEYS,
+      async (apiKey, attempt) => {
+        const response = await fetch(`${config.baseUrl}/${jobId}`, {
+          method: 'GET',
+          headers: {
+            'X-API-Key': apiKey
+          }
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          const error = new Error(errorText);
+          error.statusCode = response.status;
+          throw error;
+        }
+
+        return await response.json();
       }
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('❌ Status check error:', errorText);
-      return res.status(response.status).json({ 
-        error: 'Failed to check status',
-        details: errorText
-      });
-    }
-
-    const data = await response.json();
+    );
 
     if (!data.success) {
       return res.status(500).json({ 

@@ -90,6 +90,7 @@ const Collection: React.FC = () => {
         designFront: product.image || null,
         designBack: null,
         price,
+        isPreMadeMockup: true, // Flag to skip compositing in AR try-on
       });
       
       // Update cart count
