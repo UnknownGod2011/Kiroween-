@@ -67,9 +67,9 @@ All core rotation files are **present and functional**:
 ### Single Key Mode (Current)
 Your `.env` file has one key per service:
 ```env
-STABILITY_API_KEY=sk-wmckHl4oeG7F3w9zrWf1QUJVfbmMn4LKgaaJvYl5a5urZzzS
-REMOVE_BG_API_KEY=your_key_here
-MIRAGIC_API_KEY=your_key_here
+STABILITY_API_KEY=your_stability_key_here
+REMOVE_BG_API_KEY=your_removebg_key_here
+MIRAGIC_API_KEY=your_miragic_key_here
 ```
 
 The system loads these and uses rotation logic (even with 1 key).
