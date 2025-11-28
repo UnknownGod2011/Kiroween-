@@ -611,24 +611,20 @@ const CinematicHero = ({ onBeginCurse }: CinematicHeroProps) => {
           animation: bounce-slow 3s ease-in-out infinite;
         }
 
-        /* -------- FINAL CHROME FIX (DO NOT TOUCH EDGE) -------- */
+        /* -------- FINAL CHROME FIX (ONLY FOR CHROME — SAFE) -------- */
         html.chrome-fix .stranger-title {
-          font-size: 0.92em !important;
-          line-height: 1.05 !important;
-          margin-bottom: 10px !important;
+          font-size: 0.94em !important;       /* slightly smaller, not tiny */
+          line-height: 1.08 !important;       /* cleaner spacing */
+          margin-bottom: 18px !important;     /* space before subtitle */
         }
 
         html.chrome-fix .cinematic-subtitle {
-          margin-top: 5px !important;
-          margin-bottom: 20px !important;
-          position: relative;
-          top: 0 !important;
+          margin-top: -6px !important;        /* move subtitle UP */
+          margin-bottom: 22px !important;     /* spacing before button */
         }
 
         html.chrome-fix .premium-button {
-          margin-top: 15px !important;
-          position: relative;
-          top: 5px;
+          margin-top: 10px !important;        /* tiny push down */
         }
       `}</style>
     </section>
