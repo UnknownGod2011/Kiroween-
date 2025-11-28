@@ -625,6 +625,14 @@ const CinematicHero = ({ onBeginCurse }: CinematicHeroProps) => {
           position: relative;
           top: -2px;  /* helps keep the button centered */
         }
+
+        /* Chrome-only subtitle adjustment */
+        html.chrome-fix .cinematic-subtitle {
+          margin-top: -25px !important;
+          display: block;
+          position: relative;
+          top: -10px;
+        }
       `}</style>
     </section>
   );
