@@ -297,8 +297,8 @@ const CinematicHero = ({ onBeginCurse }: CinematicHeroProps) => {
           }`}
         >
           {/* Title - Stranger Things Style with 3D Effect */}
-          <div className="relative max-w-[90%] mx-auto lg:mx-0">
-            <h1 className="stranger-title text-6xl lg:text-7xl xl:text-8xl font-black leading-[0.9] tracking-tight">
+          <div className="relative">
+            <h1 className="stranger-title text-6xl lg:text-7xl xl:text-8xl font-black leading-tight">
               <span className="title-word">SUMMO
                 <span className="relative inline-block blood-source">
                   N
