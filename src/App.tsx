@@ -44,12 +44,20 @@ function App() {
   }, []);
 
   // Warm-up backend on app load to avoid Render cold start
+  // Maximum 2 attempts: immediate + 1 retry after 3 seconds
   useEffect(() => {
-    const warmUpBackend = async () => {
+    let hasRetried = false; // Flag to prevent multiple retries
+
+    const warmUpBackend = async (isRetry = false) => {
       const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
       
       try {
-        console.log('🔥 Warming up backend...');
+        if (!isRetry) {
+          console.log('🔥 Warming up backend (attempt 1/2)...');
+        } else {
+          console.log('🔥 Retrying backend warm-up (attempt 2/2)...');
+        }
+        
         const response = await fetch(`${backendUrl}/health`, {
           method: 'GET',
           signal: AbortSignal.timeout(5000) // 5 second timeout
@@ -59,24 +67,21 @@ function App() {
           console.log('✅ Backend is awake and ready!');
         }
       } catch (error) {
-        console.log('⏳ Backend is waking up (this is normal on first load)');
-        
-        // Retry after 3 seconds if first attempt fails (cold start)
-        setTimeout(async () => {
-          try {
-            await fetch(`${backendUrl}/health`, {
-              method: 'GET',
-              signal: AbortSignal.timeout(5000)
-            });
-            console.log('✅ Backend warmed up successfully!');
-          } catch (retryError) {
-            console.log('Backend will be ready when you need it');
-          }
-        }, 3000);
+        // Only retry once if this is the first attempt
+        if (!isRetry && !hasRetried) {
+          hasRetried = true; // Set flag to prevent further retries
+          console.log('⏳ Backend is waking up, retrying in 3 seconds...');
+          
+          setTimeout(() => {
+            warmUpBackend(true); // Second and final attempt
+          }, 3000);
+        } else {
+          console.log('Backend will be ready when you need it');
+        }
       }
     };
 
-    warmUpBackend();
+    warmUpBackend(false); // First attempt
   }, []); // Run once on mount
 
   return (
