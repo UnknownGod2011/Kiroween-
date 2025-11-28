@@ -329,8 +329,7 @@ const CinematicHero = ({ onBeginCurse }: CinematicHeroProps) => {
           {/* Premium Button */}
           <button
             onClick={onBeginCurse}
-            className="premium-button group relative px-12 py-5 pb-6 text-xl font-semibold overflow-visible"
-            style={{ transform: 'translateZ(0)', backfaceVisibility: 'hidden' }}
+            className="premium-button group relative px-12 py-5 text-xl font-semibold overflow-hidden"
           >
             <span className="relative z-10">Begin Your Curse</span>
             <div className="absolute inset-0 border-2 border-orange-500 rounded-sm group-hover:border-orange-400 transition-colors" />
@@ -444,25 +443,6 @@ const CinematicHero = ({ onBeginCurse }: CinematicHeroProps) => {
 
         .blood-target {
           position: relative;
-        }
-
-        /* Chrome-only fixes */
-        @supports (-webkit-appearance:none) and (not (-moz-appearance:none)) {
-          /* This targets Chrome only, not Edge/Firefox/Safari */
-          
-          /* Scale down hero title to match Chrome 110% zoom */
-          .stranger-title {
-            transform: scale(0.92);
-            transform-origin: top center;
-            margin-top: 20px;
-          }
-          
-          /* Fix CTA button clipping */
-          .premium-button {
-            padding-bottom: 10px !important;
-            overflow: visible !important;
-            transform: translateZ(0);
-          }
         }
 
         /* Title Flicker Animation */
