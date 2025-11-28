@@ -292,6 +292,59 @@ const ARTryOn = () => {
 
       } else {
         // Handle other backends (python-viton, deepfashion)
+        
+        // Prepare garment image for other backends
+        if (selectedDesign.isPreMadeMockup) {
+          // If it's a file path, convert to base64
+          if (tshirtImage.startsWith('/') || tshirtImage.startsWith('http')) {
+            try {
+              const response = await fetch(tshirtImage);
+              const blob = await response.blob();
+              const base64 = await new Promise<string>((resolve) => {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                  const result = reader.result as string;
+                  resolve(result.includes(',') ? result.split(',')[1] : result);
+                };
+                reader.readAsDataURL(blob);
+              });
+              garmentBase64 = base64;
+            } catch (error) {
+              console.error('Failed to load collection image:', error);
+              alert('Failed to load t-shirt image');
+              setIsProcessing(false);
+              return;
+            }
+          } else {
+            garmentBase64 = tshirtImage.includes(',')
+              ? tshirtImage.split(',')[1]
+              : tshirtImage;
+          }
+        } else {
+          // Composite design onto t-shirt
+          const compositeResponse = await fetch('http://localhost:5000/api/composite-tshirt', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              designImage: tshirtImage,
+              color: selectedDesign.color || '#3B82F6',
+              side: selectedSide
+            })
+          });
+
+          if (!compositeResponse.ok) {
+            alert('Failed to prepare t-shirt image');
+            setIsProcessing(false);
+            return;
+          }
+
+          const compositeData = await compositeResponse.json();
+          garmentBase64 = compositeData.image.includes(',')
+            ? compositeData.image.split(',')[1]
+            : compositeData.image;
+        }
 
         const response = await fetch(`${backend.url}${backend.endpoint}`, {
           method: 'POST',
