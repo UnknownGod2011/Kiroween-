@@ -613,18 +613,17 @@ const CinematicHero = ({ onBeginCurse }: CinematicHeroProps) => {
 
         /* -------- FINAL CHROME FIX (ONLY FOR CHROME — SAFE) -------- */
         html.chrome-fix .stranger-title {
-          font-size: 0.94em !important;       /* slightly smaller, not tiny */
-          line-height: 1.08 !important;       /* cleaner spacing */
-          margin-bottom: 18px !important;     /* space before subtitle */
+          line-height: 0.95 !important;       /* tighter line spacing only */
+          margin-bottom: 25px !important;     /* space before subtitle */
         }
 
         html.chrome-fix .cinematic-subtitle {
-          margin-top: -6px !important;        /* move subtitle UP */
-          margin-bottom: 22px !important;     /* spacing before button */
+          margin-top: 0px !important;         /* reset spacing */
+          margin-bottom: 25px !important;     /* spacing before button */
         }
 
         html.chrome-fix .premium-button {
-          margin-top: 10px !important;        /* tiny push down */
+          margin-top: 5px !important;         /* tiny push down */
         }
       `}</style>
     </section>
