@@ -143,10 +143,11 @@ const ARTryOn = () => {
 
       const backend = BACKENDS[selectedBackend];
 
+      // Declare garmentBase64 outside to be accessible in both branches
+      let garmentBase64: string;
+
       // Handle Miragic API with polling
       if (selectedBackend === 'miragic') {
-
-        let garmentBase64: string;
 
         // Check if this is a pre-made mockup from collection (skip compositing)
         if (selectedDesign.isPreMadeMockup) {
