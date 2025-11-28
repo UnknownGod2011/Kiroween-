@@ -446,6 +446,23 @@ const CinematicHero = ({ onBeginCurse }: CinematicHeroProps) => {
           position: relative;
         }
 
+        /* Chrome-only fixes for rendering differences */
+        @media screen and (-webkit-min-device-pixel-ratio:0) and (min-resolution:.001dpcm) {
+          /* Selector targets Chrome only, not Edge or Safari */
+          @supports (-webkit-appearance:none) and (not (-ms-ime-align:auto)) {
+            /* Fix hero title line-height in Chrome */
+            .stranger-title {
+              line-height: 0.95 !important;
+              letter-spacing: -0.02em;
+            }
+            
+            /* Fix CTA button clipping in Chrome */
+            .premium-button {
+              padding-bottom: 1.375rem !important; /* 22px instead of 20px */
+            }
+          }
+        }
+
         /* Title Flicker Animation */
         @keyframes title-flicker {
           0%, 100% {
