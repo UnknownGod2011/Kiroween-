@@ -450,8 +450,10 @@ const CinematicHero = ({ onBeginCurse }: CinematicHeroProps) => {
         @media screen and (-webkit-min-device-pixel-ratio:0) and (min-resolution:.001dpcm) {
           /* Selector targets Chrome only, not Edge or Safari */
           @supports (-webkit-appearance:none) and (not (-ms-ime-align:auto)) {
-            /* Fix hero title line-height in Chrome */
+            /* Scale hero title to match Chrome 110% zoom appearance at 100% */
             .stranger-title {
+              transform: scale(0.91);
+              transform-origin: top left;
               line-height: 0.95 !important;
               letter-spacing: -0.02em;
             }
