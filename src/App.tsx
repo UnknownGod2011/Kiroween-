@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import SplashCursor from './components/SplashCursor';
 import EnhancedTShirtMockup from './components/EnhancedTShirtMockup';
@@ -42,6 +42,42 @@ function App() {
   const scrollToCreator = useCallback(() => {
     creatorRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, []);
+
+  // Warm-up backend on app load to avoid Render cold start
+  useEffect(() => {
+    const warmUpBackend = async () => {
+      const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      
+      try {
+        console.log('🔥 Warming up backend...');
+        const response = await fetch(`${backendUrl}/health`, {
+          method: 'GET',
+          signal: AbortSignal.timeout(5000) // 5 second timeout
+        });
+        
+        if (response.ok) {
+          console.log('✅ Backend is awake and ready!');
+        }
+      } catch (error) {
+        console.log('⏳ Backend is waking up (this is normal on first load)');
+        
+        // Retry after 3 seconds if first attempt fails (cold start)
+        setTimeout(async () => {
+          try {
+            await fetch(`${backendUrl}/health`, {
+              method: 'GET',
+              signal: AbortSignal.timeout(5000)
+            });
+            console.log('✅ Backend warmed up successfully!');
+          } catch (retryError) {
+            console.log('Backend will be ready when you need it');
+          }
+        }, 3000);
+      }
+    };
+
+    warmUpBackend();
+  }, []); // Run once on mount
 
   return (
     <div className="min-h-screen relative overflow-x-hidden" style={{ background: 'linear-gradient(to bottom, #0a0015 0%, #1a0a2e 50%, #0a0015 100%)' }}>

@@ -8,6 +8,8 @@ deepfashion-backend/.venv/
 
 # Environment variables
 .env
+.env.local
+.env.production
 backend/.env
 
 # Build outputs

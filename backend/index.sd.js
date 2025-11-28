@@ -47,6 +47,15 @@ if (!fs.existsSync(uploadsDir)) {
 }
 app.use("/temp-uploads", express.static(uploadsDir));
 
+// ====== HEALTH CHECK / WARM-UP ENDPOINT ======
+app.get("/health", (req, res) => {
+  res.json({ 
+    status: "ok", 
+    message: "Backend is awake and ready",
+    timestamp: new Date().toISOString()
+  });
+});
+
 // ====== CLEANUP FUNCTION ======
 const CLEANUP_INTERVAL = 1000 * 60 * 60; // every 1 hour
 const FILE_LIFETIME = 1000 * 60 * 60; // 1 hour
