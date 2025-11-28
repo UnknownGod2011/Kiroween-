@@ -446,21 +446,19 @@ const CinematicHero = ({ onBeginCurse }: CinematicHeroProps) => {
           position: relative;
         }
 
-        /* Chrome-only fixes for rendering differences */
-        @media screen and (-webkit-min-device-pixel-ratio:0) and (min-resolution:.001dpcm) {
-          /* Selector targets Chrome only, not Edge or Safari */
-          @supports (-webkit-appearance:none) and (not (-ms-ime-align:auto)) {
-            /* Scale hero title to match Chrome 110% zoom appearance at 100% */
-            .stranger-title {
-              transform: scale(0.91);
-              transform-origin: top left;
-              line-height: 0.95 !important;
-              letter-spacing: -0.02em;
-            }
-            
-            /* Fix CTA button clipping in Chrome */
-            .premium-button {
-              padding-bottom: 1.375rem !important; /* 22px instead of 20px */
+        /* Chrome-only fixes - using most specific Chrome-only selector */
+        @media screen and (-webkit-min-device-pixel-ratio:0) {
+          @supports not (-ms-ime-align:auto) {
+            /* This targets Chrome only, excludes Edge completely */
+            @supports (-webkit-appearance:none) {
+              .stranger-title {
+                transform: scale(0.92);
+                transform-origin: top left;
+              }
+              
+              .premium-button {
+                padding-bottom: 1.375rem;
+              }
             }
           }
         }
