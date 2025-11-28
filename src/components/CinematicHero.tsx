@@ -297,8 +297,8 @@ const CinematicHero = ({ onBeginCurse }: CinematicHeroProps) => {
           }`}
         >
           {/* Title - Stranger Things Style with 3D Effect */}
-          <div className="relative">
-            <h1 className="stranger-title text-6xl lg:text-7xl xl:text-8xl font-black leading-tight">
+          <div className="relative max-w-[90%] mx-auto lg:mx-0">
+            <h1 className="stranger-title text-6xl lg:text-7xl xl:text-8xl font-black leading-[0.9] tracking-tight">
               <span className="title-word">SUMMO
                 <span className="relative inline-block blood-source">
                   N
@@ -329,7 +329,8 @@ const CinematicHero = ({ onBeginCurse }: CinematicHeroProps) => {
           {/* Premium Button */}
           <button
             onClick={onBeginCurse}
-            className="premium-button group relative px-12 py-5 text-xl font-semibold overflow-hidden"
+            className="premium-button group relative px-12 py-5 pb-6 text-xl font-semibold overflow-visible"
+            style={{ transform: 'translateZ(0)', backfaceVisibility: 'hidden' }}
           >
             <span className="relative z-10">Begin Your Curse</span>
             <div className="absolute inset-0 border-2 border-orange-500 rounded-sm group-hover:border-orange-400 transition-colors" />
