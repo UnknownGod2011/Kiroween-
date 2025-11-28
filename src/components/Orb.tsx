@@ -180,10 +180,14 @@ export default function Orb({
   `;
 
   useEffect(() => {
-    // Initialize audio
+    // Initialize audio with preload
     audioRef.current = new Audio('/haunted-mystery-sound-428183.mp3');
     audioRef.current.loop = false; // Play once per click
     audioRef.current.volume = 0.3;
+    audioRef.current.preload = 'auto'; // Ensure audio is preloaded
+    
+    // Load audio immediately to prepare it
+    audioRef.current.load();
 
     return () => {
       if (audioRef.current) {
@@ -197,10 +201,19 @@ export default function Orb({
     const newActiveState = !isActive;
     setIsActive(newActiveState);
 
+    // Lazy initialize audio on first click if needed (fixes autoplay policy)
+    if (!audioRef.current) {
+      audioRef.current = new Audio('/haunted-mystery-sound-428183.mp3');
+      audioRef.current.loop = false;
+      audioRef.current.volume = 0.3;
+    }
+
     // Play sound on every click
     if (audioRef.current) {
       audioRef.current.currentTime = 0; // Reset to start
-      audioRef.current.play().catch(() => {});
+      audioRef.current.play().catch((err) => {
+        console.log('Audio play prevented:', err);
+      });
     }
 
     // Notify parent component (App) about the toggle
