@@ -43,6 +43,20 @@ function App() {
     creatorRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, []);
 
+  // Chrome-only UI fix detection
+  useEffect(() => {
+    const ua = navigator.userAgent;
+    // Chrome ONLY (not Edge, not Opera)
+    const isChrome =
+      ua.includes("Chrome") &&
+      !ua.includes("Edg") &&
+      !ua.includes("OPR");
+
+    if (isChrome) {
+      document.documentElement.classList.add("chrome-fix");
+    }
+  }, []);
+
   // Warm-up backend on app load to avoid Render cold start
   // Maximum 2 attempts: immediate + 1 retry after 3 seconds
   useEffect(() => {

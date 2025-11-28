@@ -610,6 +610,21 @@ const CinematicHero = ({ onBeginCurse }: CinematicHeroProps) => {
         .animate-bounce-slow {
           animation: bounce-slow 3s ease-in-out infinite;
         }
+
+        /* Chrome-only UI fixes */
+        html.chrome-fix .stranger-title {
+          transform: scale(0.92);     /* makes hero text slightly smaller */
+          transform-origin: top left; /* scales from top */
+        }
+
+        html.chrome-fix .premium-button {
+          margin-top: -20px !important;  /* lifts button upward */
+        }
+
+        html.chrome-fix .premium-button span {
+          position: relative;
+          top: -2px;  /* helps keep the button centered */
+        }
       `}</style>
     </section>
   );
