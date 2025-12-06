@@ -32,8 +32,10 @@ const SpookyImages = () => {
     setIsGenerating(true);
     setError(null);
     
+    const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+    
     try {
-      const response = await fetch('http://localhost:5000/haunted-image', {
+      const response = await fetch(`${API_BASE}/haunted-image`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

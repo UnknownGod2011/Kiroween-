@@ -7,10 +7,12 @@ import { getCartItems, type CartItem } from '../utils/cartStorage';
 
 type BackendType = 'miragic' | 'python-viton' | 'deepfashion';
 
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 const BACKENDS = {
   'miragic': {
     name: 'Miragic',
-    url: 'http://localhost:5000',
+    url: API_BASE,
     endpoint: '/api/miragic/tryon',
     status: '✅ Available',
     description: 'Cloud API',
@@ -183,7 +185,7 @@ const ARTryOn = () => {
         } else {
           // Step 0: Composite design onto t-shirt mockup for generated designs
           console.log('🎨 Compositing design onto t-shirt...');
-          const compositeResponse = await fetch('http://localhost:5000/api/composite-tshirt', {
+          const compositeResponse = await fetch(`${API_BASE}/api/composite-tshirt`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'
@@ -322,7 +324,7 @@ const ARTryOn = () => {
           }
         } else {
           // Composite design onto t-shirt
-          const compositeResponse = await fetch('http://localhost:5000/api/composite-tshirt', {
+          const compositeResponse = await fetch(`${API_BASE}/api/composite-tshirt`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'
