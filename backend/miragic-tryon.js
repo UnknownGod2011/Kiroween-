@@ -1,10 +1,19 @@
 import express from 'express';
 import fetch from 'node-fetch';
 import FormData from 'form-data';
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import keyRotation from './utils/keyRotation.js';
 import { MIRAGIC_KEYS } from './utils/apiKeys.js';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+dotenv.config({ path: path.join(__dirname, '.env') });
+
 const router = express.Router();
+const BASE_URL = process.env.BASE_URL || `http://localhost:${process.env.PORT || 5000}`;
 
 // Get config from environment (loaded by main server)
 const getMiragicConfig = () => ({
@@ -154,13 +163,13 @@ router.get('/tryon/:jobId', async (req, res) => {
       return res.json({
         success: true,
         status: 'COMPLETED',
-        processedUrl: 'http://localhost:5000/temp-uploads/mock-result.png',
+        processedUrl: `${BASE_URL}/temp-uploads/mock-result.png`,
         errorMessage: null,
         data: {
           id: jobId,
           status: 'COMPLETED',
           mode: 'SINGLE',
-          processedUrl: 'http://localhost:5000/temp-uploads/mock-result.png',
+          processedUrl: `${BASE_URL}/temp-uploads/mock-result.png`,
           createdAt: new Date().toISOString()
         }
       });
