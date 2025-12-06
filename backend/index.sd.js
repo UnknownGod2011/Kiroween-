@@ -24,6 +24,7 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // ====== CONFIG ======
 const PORT = process.env.PORT || 5000;
+const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
 const STABILITY_API_KEY = process.env.STABILITY_API_KEY;
 const REMOVE_BG_API_KEY = process.env.REMOVE_BG_API_KEY;
 const LIGHTX_API_KEY = process.env.LIGHTX_API_KEY;
@@ -145,7 +146,7 @@ async function handleGenerate(req, res) {
     // Return public URL
     res.json({
       message: "Image generated successfully with transparent background",
-      url: `http://localhost:${PORT}/designs/${filename}`,
+      url: `${BASE_URL}/designs/${filename}`,
     });
   } catch (err) {
     console.error("Server error:", err);
@@ -299,8 +300,8 @@ app.post("/api/tryon", async (req, res) => {
     fs.writeFileSync(personPath, resizedPersonBuffer);
     fs.writeFileSync(tshirtPath, resizedTshirtBuffer);
 
-    const personUrl = `http://localhost:${PORT}/temp-uploads/${personFilename}`;
-    const tshirtUrl = `http://localhost:${PORT}/temp-uploads/${tshirtFilename}`;
+    const personUrl = `${BASE_URL}/temp-uploads/${personFilename}`;
+    const tshirtUrl = `${BASE_URL}/temp-uploads/${tshirtFilename}`;
 
     console.log('✅ Temp URLs created');
     console.log('Person URL:', personUrl);
